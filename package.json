@@ -1,0 +1,21 @@
+{
+  "name": "raiders-life",
+  "version": "0.3.0",
+  "description": "A permadeath roguelite RPG: one raider's life with the Great Heathen Army and after, 865 to 900.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "balance": "vitest run tests/simulate.test.ts --reporter=verbose"
+  },
+  "devDependencies": {
+    "typescript": "5.6.3",
+    "vite": "5.4.21",
+    "vite-plugin-singlefile": "2.3.4",
+    "vitest": "2.1.9"
+  }
+}

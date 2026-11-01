@@ -1,0 +1,474 @@
+[
+  {
+    "id": "rival1", "chapters": [0, 2],
+    "text": "Hrafn the Squint, an older oarsman, mocks the way you pull an oar, loud enough for the whole bench to hear.",
+    "options": [
+      { "label": "Answer with your fists (strength)", "check": { "stat": "str", "diff": 1 },
+        "pass": { "text": "Hrafn ends up in the bilge water. Reputation +3.", "rep": 3, "flags": { "rival": 1 } },
+        "fail": { "text": "Hrafn is stronger than he looks. Health −4, morale −5.", "hp": -4, "mor": -5, "flags": { "rival": 1 } } },
+      { "label": "Laugh it off",
+        "pass": { "text": "You laugh. He keeps talking. Morale −2.", "mor": -2, "flags": { "rival": 1 } } },
+      { "label": "Complain to the steersman",
+        "pass": { "text": "The steersman tells Hrafn to be quiet, and the bench calls you a tattler. Reputation −1.", "rep": -1, "flags": { "rival": 1 } } }
+    ]
+  },
+  {
+    "id": "rival2", "chapters": [3, 6], "when": { "flags": { "rival": 1 } },
+    "text": "Hrafn is telling the whole camp that you hid behind your shield in the last fight.",
+    "options": [
+      { "label": "Challenge him to a hólmganga", "check": { "stat": "fight", "diff": 1 },
+        "pass": { "text": "On the island of hazel stakes, Hrafn yields at first blood. Reputation +6.", "rep": 6, "flags": { "rival": 2 } },
+        "fail": { "text": "Hrafn’s axe comes down on your arm, and the camp laughs. Reputation −4.", "rep": -4, "wound": "arm", "flags": { "rival": 3 } } },
+      { "label": "Let your deeds answer", "test": { "minKills": 5 },
+        "pass": { "text": "Men who stood beside you laugh Hrafn down. Reputation +3.", "rep": 3, "flags": { "rival": 2 } },
+        "fail": { "text": "You have too few deeds to point to. The story sticks. Morale −6.", "mor": -6, "flags": { "rival": 3 } } }
+    ]
+  },
+  {
+    "id": "rival3a", "chapters": [6, 10], "when": { "flags": { "rival": 2 } },
+    "text": "On the eve of battle Hrafn comes to your fire and holds out his hand. “Old quarrels are for peacetime.”",
+    "options": [
+      { "label": "Take his hand",
+        "pass": { "text": "Hrafn takes the place at your left shoulder. Morale +5.", "mor": 5, "addCrew": { "name": "Hrafn", "hp": 14, "place": "leftFront" } } },
+      { "label": "Leave him standing",
+        "pass": { "text": "He shrugs and walks off into the dark.", "mor": -1 } }
+    ]
+  },
+  {
+    "id": "rival3b", "chapters": [6, 10], "when": { "flags": { "rival": 3 } },
+    "text": "You wake in the dark to a hand at your purse. It is Hrafn.",
+    "options": [
+      { "label": "Grab his wrist (skill)", "check": { "stat": "skl", "diff": 1 },
+        "pass": { "text": "You drag him before the jarl, who fines him heavily. Reputation +4.", "rep": 4, "flags": { "rival": 4 } },
+        "fail": { "text": "He twists free and is gone with {lost} silver.", "silverLoss": 0.5 } },
+      { "label": "Lie still and let him go",
+        "pass": { "text": "You keep your skin and lose {lost} silver. Morale −4.", "silverLoss": 0.3, "mor": -4 } }
+    ]
+  },
+  {
+    "id": "wife1", "chapters": [1, 3],
+    "text": "In the captured town a Saxon woman named Eadgyth is binding wounds, Danish and English alike. She stitches your arm without a word.",
+    "options": [
+      { "label": "Ask her name and come back the next day",
+        "pass": { "text": "She lets you sit with her while she works. Morale +6.", "mor": 6, "flags": { "wife": 1 } } },
+      { "label": "Leave her 3 silver", "pay": 3,
+        "pass": { "text": "She takes it without thanks, which seems fair. Reputation +1, morale +2.", "rep": 1, "mor": 2 } },
+      { "label": "Go back to the ship",
+        "pass": { "text": "You go back to the ship." } }
+    ]
+  },
+  {
+    "id": "wife2", "chapters": [3, 6], "when": { "flags": { "wife": 1 } },
+    "text": "Eadgyth has no family left in her town. She asks whether a raider has room for a wife who prays to the White Christ.",
+    "options": [
+      { "label": "Take her as your wife",
+        "pass": { "text": "She follows the army now. Resting in camp heals you more. Morale +12.", "mor": 12, "flags": { "wife": 2 } } },
+      { "label": "Tell her the army is no place for her",
+        "pass": { "text": "She nods and does not look back. Morale −4.", "mor": -4, "flags": { "wife": 0 } } }
+    ]
+  },
+  {
+    "id": "wife3", "chapters": [5, 12], "when": { "flags": { "wife": 2 } },
+    "text": "Eadgyth asks you to promise that one day you will stand at the font with her.",
+    "options": [
+      { "label": "Promise her",
+        "pass": { "text": "She smiles for the first time in weeks. Morale +4.", "mor": 4, "flags": { "promise": 1 } } },
+      { "label": "Make no promise",
+        "pass": { "text": "She does not ask again. Morale −3.", "mor": -3 } }
+    ]
+  },
+  {
+    "id": "child", "chapters": [6, 13], "when": { "flags": { "wife": 2 }, "notFlags": ["son"] },
+    "text": "Eadgyth tells you she is with child.",
+    "options": [
+      { "label": "Swear to see the child grown",
+        "pass": { "text": "A son is born before the next winter. Morale +10.", "mor": 10, "flags": { "son": 1 } } },
+      { "label": "Pay a farmwife to keep them",
+        "pass": { "text": "Mother and child stay safe behind the army. A son is born that winter. Silver −5, morale +3.", "silver": -5, "mor": 3, "flags": { "son": 1 } } }
+    ]
+  },
+  {
+    "id": "thegn1", "chapters": [2, 4],
+    "text": "After a skirmish you stand over a wounded thegn named Wulfstan. He offers his gold ring for his life.",
+    "options": [
+      { "label": "Ransom him to his kin",
+        "pass": { "text": "His brother pays in hacksilver. Silver +12, reputation +1.", "silver": 12, "rep": 1 } },
+      { "label": "Kill him",
+        "pass": { "text": "The ravens have their due. Reputation +2, morale −4.", "rep": 2, "mor": -4 } },
+      { "label": "Let him go",
+        "pass": { "text": "He limps off without a word. Your bench thinks you soft. Morale +4, reputation −1.", "mor": 4, "rep": -1, "flags": { "thegn": 1 } } }
+    ]
+  },
+  {
+    "id": "thegn2", "chapters": [7, 7], "priority": true, "when": { "flags": { "thegn": 1 } },
+    "text": "A Saxon rider comes to the edge of camp under a green branch. Wulfstan sends word: if the day goes against you, come to the ford by the white stone and his men will let you through.",
+    "options": [
+      { "label": "Remember the ford",
+        "pass": { "text": "You fix the white stone in your mind.", "flags": { "ford": 1 } } },
+      { "label": "Tell the jarl Alfred is near",
+        "pass": { "text": "The jarl nods slowly and doubles the watch. Reputation +5.", "rep": 5 } }
+    ]
+  },
+  {
+    "id": "halfdan", "chapters": [5, 5], "priority": true,
+    "text": "Halfdan is taking his men north to share out the land of Northumbria: ploughland and pasture, and no more marching.",
+    "options": [
+      { "label": "Go north with Halfdan",
+        "pass": { "text": "", "endRun": "north" } },
+      { "label": "Stay with Guthrum’s army",
+        "pass": { "text": "There is still silver in the south. Morale +2.", "mor": 2 } }
+    ]
+  },
+  {
+    "id": "swanage", "chapters": [6, 6], "priority": true,
+    "text": "Word comes that a storm off Swanage has sunk most of the fleet that was bringing food. The camp at Exeter goes hungry.",
+    "options": [
+      { "label": "Tighten your belt",
+        "pass": { "text": "Thin porridge and short tempers. Morale −8, health −2.", "mor": -8, "hp": -2 } },
+      { "label": "Steal from the jarl’s stores (skill)", "check": { "stat": "skl", "diff": 2 },
+        "pass": { "text": "Salt pork in the dark. Morale +4, health +4.", "mor": 4, "hp": 4 },
+        "fail": { "text": "You are caught with the pork and beaten. Reputation −6, health −3.", "rep": -6, "hp": -3 } }
+    ]
+  },
+  {
+    "id": "chippenham", "chapters": [7, 7],
+    "text": "On Twelfth Night the army falls on Chippenham while the Saxons are at their feast. Alfred escapes into the Somerset marshes.",
+    "options": [
+      { "label": "Loot the royal hall",
+        "pass": { "text": "Silver cups and a fine cloak. Silver +8.", "silver": 8 } },
+      { "label": "Hunt for Alfred in the marsh (endurance)", "check": { "stat": "end", "diff": 1 },
+        "pass": { "text": "You find his trail before the rain washes it out. Reputation +4.", "rep": 4 },
+        "fail": { "text": "Cold water to the waist and nothing to show for it. Health −4, morale −4.", "hp": -4, "mor": -4 } }
+    ]
+  },
+  {
+    "id": "yule", "chapters": [5, 5],
+    "text": "Yule at Repton. The army feasts for twelve nights, and a boar is carried in for oaths.",
+    "options": [
+      { "label": "Drink deep",
+        "pass": { "text": "Songs, mead and a sore head. Morale +15.", "mor": 15 } },
+      { "label": "Swear on the boar to kill the next champion you face",
+        "pass": { "text": "The hall roars. Now you must keep it. Morale +8.", "mor": 8, "flags": { "oath": 1 } } }
+    ]
+  },
+  {
+    "id": "wine", "chapters": [8, 11],
+    "text": "Your bench breaks into a monastery cellar full of Frankish wine.",
+    "options": [
+      { "label": "Drink with the bench",
+        "pass": { "text": "Morale +12, and a headache that lasts two days. Health −2.", "mor": 12, "hp": -2 } },
+      { "label": "Sell your share to a Frisian trader",
+        "pass": { "text": "Silver +6.", "silver": 6 } }
+    ]
+  },
+  {
+    "id": "abbot", "chapters": [8, 11],
+    "text": "You catch a Frankish abbot trying to slip away with his abbey’s relics.",
+    "options": [
+      { "label": "Hold him for ransom",
+        "pass": { "text": "The monks pay to have him back. Silver +14.", "silver": 14 } },
+      { "label": "Take the reliquary and let him go",
+        "pass": { "text": "Gold and garnets. Silver +8, reputation +1.", "silver": 8, "rep": 1 } }
+    ]
+  },
+  {
+    "id": "paris_silver", "chapters": [10, 10], "priority": true,
+    "text": "Emperor Charles the Fat arrives with an army, but instead of fighting he pays the host 700 pounds of silver and lets it raid Burgundy.",
+    "options": [
+      { "label": "Take your share and go to Burgundy",
+        "pass": { "text": "Silver +15.", "silver": 15 } },
+      { "label": "Argue for storming the city one more time",
+        "pass": { "text": "Men respect your nerve, but the jarls take the silver. Reputation +3, morale −3.", "rep": 3, "mor": -3 } }
+    ]
+  },
+  {
+    "id": "frankblade", "chapters": [8, 12], "when": { "maxWeapon": 3 },
+    "text": "A smith in a Frankish town sells blades with a name inlaid in the steel. He wants 40 silver.",
+    "options": [
+      { "label": "Buy one", "pay": 40,
+        "pass": { "text": "You now carry a Frankish blade. Silver −40.", "weapon": 4 } },
+      { "label": "Admire it and walk on",
+        "pass": { "text": "You walk on." } }
+    ]
+  },
+  {
+    "id": "haesten", "chapters": [12, 14],
+    "text": "Hæsten, the old sea-king, wants men to hold the fort while he takes the rest out raiding.",
+    "options": [
+      { "label": "Volunteer for the fort",
+        "pass": { "text": "Dull work, but Hæsten remembers who stayed. Reputation +4, morale −2.", "rep": 4, "mor": -2 } },
+      { "label": "Go raiding with him", "chance": 60,
+        "pass": { "text": "A good haul from the Kentish villages. Silver +10.", "silver": 10 },
+        "fail": { "text": "The fyrd catches you at a river crossing. Health −5.", "hp": -5 } }
+    ]
+  },
+  {
+    "id": "horsemeat", "chapters": [13, 13], "priority": true,
+    "text": "The army has eaten its horses. Some men on the island are dying of hunger.",
+    "options": [
+      { "label": "Share what you have",
+        "pass": { "text": "Health −4, morale +6, reputation +2.", "hp": -4, "mor": 6, "rep": 2 } },
+      { "label": "Keep your food hidden",
+        "pass": { "text": "You stay strong, and the bench knows why. Health +3, reputation −3, morale −4.", "hp": 3, "rep": -3, "mor": -4 } }
+    ]
+  },
+  {
+    "id": "alfred_dead", "chapters": [15, 15], "priority": true,
+    "text": "News comes from the south: King Alfred is dead.",
+    "options": [
+      { "label": "Drink to an old enemy",
+        "pass": { "text": "The old men at the fire drink with you. Morale +5, reputation +1.", "mor": 5, "rep": 1 } },
+      { "label": "Say nothing",
+        "pass": { "text": "You think of Edington and say nothing." } }
+    ]
+  },
+  {
+    "id": "greybeard2", "when": { "minAge": 40 },
+    "text": "A young raider calls you grandfather in front of the whole bench.",
+    "options": [
+      { "label": "Teach him some respect (strength)", "check": { "stat": "str", "diff": 1 },
+        "pass": { "text": "He won’t say it again. Reputation +3.", "rep": 3 },
+        "fail": { "text": "He is quicker than you were at his age. Health −3, morale −4.", "hp": -3, "mor": -4 } },
+      { "label": "Laugh and tell him about Ashdown",
+        "pass": { "text": "The young ones listen. Morale +4.", "mor": 4 } }
+    ]
+  },
+  {
+    "id": "brawl",
+    "text": "A drinking-horn argument turns into a brawl in the hall.",
+    "options": [
+      { "label": "Join in (strength)", "check": { "stat": "str", "diff": 0 },
+        "pass": { "text": "You flatten a loudmouth. Reputation +3.", "rep": 3 },
+        "fail": { "text": "You meet a bench with your face. Health −4.", "hp": -4 } },
+      { "label": "Break it up",
+        "pass": { "text": "The jarl’s men note your calm. Reputation +1.", "rep": 1 } },
+      { "label": "Walk away",
+        "pass": { "text": "You drink alone. Morale −3.", "mor": -3 } }
+    ]
+  },
+  {
+    "id": "skald",
+    "text": "A skald offers to put your name into a verse, for a price.",
+    "options": [
+      { "label": "Pay 3 silver", "pay": 3,
+        "pass": { "text": "Your name will be sung at the fires. Reputation +4.", "rep": 4 } },
+      { "label": "Boast of your deeds instead (skill)", "check": { "stat": "skl", "diff": 0 },
+        "pass": { "text": "Your boast rings true. Reputation +3.", "rep": 3 },
+        "fail": { "text": "They laugh at you. Morale −6.", "mor": -6 } }
+    ]
+  },
+  {
+    "id": "sick",
+    "text": "A shipmate burns with fever and has nothing to eat.",
+    "options": [
+      { "label": "Share your rations",
+        "pass": { "text": "He lives, and the crew respects you for it. Morale +8, health −2.", "mor": 8, "hp": -2 } },
+      { "label": "Leave him to it",
+        "pass": { "text": "Nobody speaks to you tonight. Morale −5, reputation −1.", "mor": -5, "rep": -1 } }
+    ]
+  },
+  {
+    "id": "monk",
+    "text": "Your bench drags a frightened monk out of a church. He swears the silver is buried under the altar.",
+    "options": [
+      { "label": "Dig up the silver",
+        "pass": { "text": "Ten silver in your purse, and a cold feeling. Silver +10, morale −5.", "silver": 10, "mor": -5 } },
+      { "label": "Let him go",
+        "pass": { "text": "Word of your mercy travels. Reputation +2.", "rep": 2 } }
+    ]
+  },
+  {
+    "id": "fish",
+    "text": "The salted fish on the ship has gone bad.",
+    "options": [
+      { "label": "Eat it anyway", "chance": 50,
+        "pass": { "text": "Your stomach holds." },
+        "fail": { "text": "You retch for a day. Health −6.", "hp": -6 } },
+      { "label": "Go hungry",
+        "pass": { "text": "Hunger gnaws at you. Morale −6.", "mor": -6 } }
+    ]
+  },
+  {
+    "id": "greybeard", "chapters": [0, 9],
+    "text": "A grey-bearded raider offers to teach you a trick with the shield.",
+    "options": [
+      { "label": "Listen and learn",
+        "pass": { "text": "You learn to read a man’s feet. Skill +1.", "skl": 1 } },
+      { "label": "Spar with him (strength)", "check": { "stat": "str", "diff": 0 },
+        "pass": { "text": "You hold your own. Strength +1.", "str": 1 },
+        "fail": { "text": "He knocks you flat. Health −5.", "hp": -5 } }
+    ]
+  },
+  {
+    "id": "dice",
+    "text": "Men are playing hnefatafl for silver by the fire.",
+    "options": [
+      { "label": "Play for 4 silver (skill)", "requires": { "minSilver": 4 }, "check": { "stat": "skl", "diff": 0 },
+        "pass": { "text": "Your king escapes to the corner. Silver +4.", "silver": 4 },
+        "fail": { "text": "Your king is surrounded. Silver −4.", "silver": -4 } },
+      { "label": "Watch",
+        "pass": { "text": "A good game to watch. Morale +2.", "mor": 2 } }
+    ]
+  },
+  {
+    "id": "horses", "chapters": [1, 15],
+    "text": "The enemy’s horses are picketed just past the river, lightly guarded.",
+    "options": [
+      { "label": "Steal two (skill)", "check": { "stat": "skl", "diff": 1 },
+        "pass": { "text": "You sell them to the jarl’s stablemaster. Silver +8, reputation +1.", "silver": 8, "rep": 1 },
+        "fail": { "text": "A guard’s spear catches your leg. Health −5.", "hp": -5 } },
+      { "label": "Leave them",
+        "pass": { "text": "You leave them." } }
+    ]
+  },
+  {
+    "id": "bearshirts",
+    "text": "The bear-shirts invite you to their rite around a great fire.",
+    "options": [
+      { "label": "Join them",
+        "pass": { "text": "You howl until dawn and wake with burns. Morale +10, health −3.", "mor": 10, "hp": -3 } },
+      { "label": "Keep your distance",
+        "pass": { "text": "You watch from the dark." } }
+    ]
+  },
+  {
+    "id": "volva",
+    "text": "A seeress throws rune-staves for anyone with silver.",
+    "options": [
+      { "label": "Pay 2 silver", "pay": 2, "chance": 55,
+        "pass": { "text": "She sees ravens over your enemies. Morale +8, {god}’s favour +1.", "mor": 8, "favour": "random" },
+        "fail": { "text": "She will not say what she saw. Morale −6.", "mor": -6 } },
+      { "label": "Walk past",
+        "pass": { "text": "You walk past." } }
+    ]
+  },
+  {
+    "id": "frost", "chapters": [2, 15],
+    "text": "A hard frost. {crewFirst} has lost his cloak.",
+    "options": [
+      { "label": "Share yours",
+        "pass": { "text": "Two men under one cloak. Morale +4, health −3.", "mor": 4, "hp": -3 } },
+      { "label": "Keep it",
+        "pass": { "text": "You sleep warm but badly. Morale −3.", "mor": -3 } }
+    ]
+  },
+  {
+    "id": "thief",
+    "text": "A local boy darts off with a loaf from your pack.",
+    "options": [
+      { "label": "Chase him (endurance)", "check": { "stat": "end", "diff": 0 },
+        "pass": { "text": "You get the bread back. He runs off crying." },
+        "fail": { "text": "He is faster than you. Morale −2.", "mor": -2 } },
+      { "label": "Let him go",
+        "pass": { "text": "You had a brother that age. Morale +3.", "mor": 3 } }
+    ]
+  },
+  {
+    "id": "deserters", "chapters": [3, 14],
+    "text": "Three men from your bench plan to slip away tonight. They ask you to come.",
+    "options": [
+      { "label": "Report them",
+        "pass": { "text": "They are caught at dawn. Reputation +4, morale −4.", "rep": 4, "mor": -4 } },
+      { "label": "Keep quiet",
+        "pass": { "text": "You turn over and say nothing." } },
+      { "label": "Go with them",
+        "pass": { "text": "", "endRun": "desert" } }
+    ]
+  },
+  {
+    "id": "glima",
+    "text": "The camp holds glíma wrestling, with an arm-ring for the winner.",
+    "options": [
+      { "label": "Wrestle (strength)", "check": { "stat": "str", "diff": 1 },
+        "pass": { "text": "You throw three men. Reputation +3, silver +3.", "rep": 3, "silver": 3 },
+        "fail": { "text": "You are thrown in the first bout. Health −2, morale −2.", "hp": -2, "mor": -2 } },
+      { "label": "Cheer from the side",
+        "pass": { "text": "Morale +2.", "mor": 2 } }
+    ]
+  },
+  {
+    "id": "barrow",
+    "text": "The locals avoid an old burial mound. They say a dead king lies inside with his gold.",
+    "options": [
+      { "label": "Dig into the mound", "chance": 45,
+        "pass": { "text": "Old gold, green with age. Silver +10.", "silver": 10 },
+        "fail": { "text": "Something moves in the dark of the mound, and you run. Morale −10.", "mor": -10 } },
+      { "label": "Leave the dead alone",
+        "pass": { "text": "You leave the dead alone." } }
+    ]
+  },
+  {
+    "id": "plate",
+    "text": "The church has silver plate. The priest begs you to leave the altar cross.",
+    "options": [
+      { "label": "Take everything",
+        "pass": { "text": "Silver +9, morale −2.", "silver": 9, "mor": -2 } },
+      { "label": "Leave him the cross",
+        "pass": { "text": "Silver +5, reputation +1.", "silver": 5, "rep": 1 } }
+    ]
+  },
+  {
+    "id": "trader", "chapters": [0, 9], "when": { "maxWeapon": 2 },
+    "text": "A trader from Dublin offers a ring-sword for 14 silver. That is very cheap.",
+    "options": [
+      { "label": "Buy it", "pay": 14, "chance": 55,
+        "pass": { "text": "It is the real thing. You now carry a ring-sword.", "weapon": 3 },
+        "fail": { "text": "It snaps at the first test. The trader has already gone." } },
+      { "label": "Pass",
+        "pass": { "text": "You let him go." } }
+    ]
+  },
+  {
+    "id": "ivar", "chapters": [0, 3],
+    "text": "Ivar the Boneless’s hearth-men walk the lines, picking men for a dangerous scouting ride.",
+    "options": [
+      { "label": "Step forward (skill)", "check": { "stat": "skl", "diff": 1 },
+        "pass": { "text": "You bring back word of the enemy’s camp. Reputation +5, silver +4.", "rep": 5, "silver": 4 },
+        "fail": { "text": "You are spotted and ridden down. Health −5.", "hp": -5, "woundChance": 40 } },
+      { "label": "Stay in line",
+        "pass": { "text": "You stay where you are." } }
+    ]
+  },
+  {
+    "id": "ale",
+    "text": "The ale has run out and tempers are short.",
+    "options": [
+      { "label": "Buy from a local alewife (2 silver)", "pay": 2,
+        "pass": { "text": "Silver −2, morale +10.", "mor": 10 } },
+      { "label": "Do without",
+        "pass": { "text": "Morale −4.", "mor": -4 } }
+    ]
+  },
+  {
+    "id": "nid", "repeatable": true, "when": { "nid": true },
+    "text": "Men spit when you pass. Nobody wants a níðingr at their fire.",
+    "options": [
+      { "label": "Bear it",
+        "pass": { "text": "Morale −6.", "mor": -6 } },
+      { "label": "Buy a round of ale (4 silver)", "pay": 4,
+        "pass": { "text": "A few men drink with you. Silver −4, reputation +2.", "rep": 2 } }
+    ]
+  },
+  {
+    "id": "recruit", "minRank": 1,
+    "text": "A green recruit, Ulf the Young, asks you to teach him how to stand in the wall.",
+    "options": [
+      { "label": "Teach him and take him on your side",
+        "pass": { "text": "Ulf joins your part of the wall. Reputation +2.", "rep": 2, "addCrew": { "name": "Ulf the Young", "hp": 9, "place": "shortSide" } } },
+      { "label": "Send him away",
+        "pass": { "text": "He finds another teacher." } }
+    ]
+  },
+  {
+    "id": "judge", "minRank": 3,
+    "text": "Two men of your crew quarrel over a dead man’s shield. They want their captain to judge.",
+    "options": [
+      { "label": "Give it to the elder",
+        "pass": { "text": "Reputation +2.", "rep": 2 } },
+      { "label": "Make them wrestle for it",
+        "pass": { "text": "The crew enjoys it more than either man. Morale +4.", "mor": 4 } },
+      { "label": "Keep it yourself",
+        "pass": { "text": "Silver +3, reputation −2.", "silver": 3, "rep": -2 } }
+    ]
+  }
+]
