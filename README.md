@@ -4,6 +4,10 @@ A permadeath roguelite RPG about one ordinary raider of the Great Heathen Army, 
 
 Each of the sixteen chapters is a camp (train, feast, rest, hunt, buy gear, make offerings, deal with events) followed by a shield-wall battle (read the enemy’s move, time your blows, push their wall back). Death is permanent; points from finished runs buy starting bonuses for the next raider.
 
+## AI Notice
+
+Made with Claude
+
 ## Getting started
 
 You need [Node.js](https://nodejs.org) 18 or newer.
@@ -103,31 +107,3 @@ Numbers for combat live in `src/core/combat.ts` (hit chances, damage, enemy stre
 ## Saves
 
 Everything saved goes through the `SaveStore` interface in `src/save/storage.ts`. In the browser that is `localStorage` (the same keys as the original single-file game, so existing saves carry over). For a desktop build, write a `SaveStore` that reads and writes files and call `useStore(new YourStore())` at the top of `src/main.ts`, before `loadLegacy()`.
-
-## Making a desktop app
-
-The game is ready to be wrapped; no code changes are needed beyond an optional file-based save store.
-
-**With [Tauri](https://tauri.app) (small downloads, uses the system web view).** You need Rust installed.
-
-```sh
-npm install -D @tauri-apps/cli
-npx tauri init
-```
-
-When asked, use `../dist` as the web assets location, `http://localhost:5173` as the dev server URL, `npm run dev` as the dev command and `npm run build` as the build command. Then:
-
-```sh
-npx tauri dev      # run as a desktop window
-npx tauri build    # make an installer for this platform
-```
-
-To keep saves in real files, add the Tauri filesystem or store plugin and implement `SaveStore` with it.
-
-**With Electron** (larger downloads, the same Chromium everywhere): load `dist/index.html` in a `BrowserWindow`. Electron is the more common route for Steam releases.
-
-Either way, Steam features such as achievements and cloud saves come from a Steamworks binding for the wrapper you choose.
-
-## Playing on claude.ai
-
-The published page is built from this project: run `npm run build` and publish the contents of `dist/index.html`.
