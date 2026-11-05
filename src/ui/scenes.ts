@@ -128,5 +128,5 @@ export function sceneSVG(i: number): string {
   if (!s.water || s.water.kind !== "sea") o += `<path d="${hillsPath(r, 226, 5, 8)}" fill="${M.near}"/>`;
   if (has("rain")) for (let k = 0; k < 70; k++) { const x = r() * 700 - 30, y = r() * 240; o += `<line x1="${x.toFixed(0)}" y1="${y.toFixed(0)}" x2="${(x - 8).toFixed(0)}" y2="${(y + 16).toFixed(0)}" stroke="#d6dde0" stroke-opacity=".35" stroke-width="1"/>`; }
   if (M.snow) for (let k = 0; k < 90; k++) o += `<circle cx="${(r() * 640).toFixed(0)}" cy="${(r() * 240).toFixed(0)}" r="${(r() * 1.6 + 0.6).toFixed(1)}" fill="#ffffff" opacity=".85"/>`;
-  return `<svg class="scene" viewBox="0 0 640 240" role="img" aria-label="${esc(c.alt)}"><defs>${defs}</defs>${o}</svg>`;
+  return `<svg class="scene" viewBox="0 0 640 240" preserveAspectRatio="xMidYMid slice" role="img" aria-label="${esc(c.alt)}"><defs>${defs}</defs>${o}</svg>`;
 }

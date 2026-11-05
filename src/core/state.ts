@@ -16,7 +16,7 @@ export const st = {
 };
 
 function defaultLegacy(): Legacy {
-  return { pts: 0, up: { str: 0, skl: 0, end: 0, hoard: 0 }, seen: {}, best: 0, runs: 0, fought: 0, timing: true };
+  return { pts: 0, up: { str: 0, skl: 0, end: 0, hoard: 0 }, seen: {}, best: 0, runs: 0, fought: 0, timing: true, layout: "auto" };
 }
 export function loadLegacy(): void {
   const saved = store.load<Partial<Legacy>>(KEYS.legacy) || {};

@@ -164,3 +164,46 @@ input[type=text]{font:inherit;padding:8px 10px;border:1px solid var(--ink);backg
 .score td:last-child{text-align:right}
 .score tr.total td{font-weight:700;border-bottom:0}
 @media (prefers-reduced-motion:reduce){.map .ring{animation:none;opacity:.6}.fill{transition:none}}
+
+/* ---------- phone layout ---------- */
+[data-press]{cursor:pointer;touch-action:manipulation;-webkit-user-select:none;user-select:none}
+.recent{background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--gold);padding:10px 14px;display:flex;flex-direction:column;gap:6px;font-size:.95rem}
+.recent .head{font-weight:700;color:var(--frost)}
+.recent .bad{color:var(--blood)}
+.recent .good{color:var(--good)}
+body.phone{font-size:17px}
+body.phone::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.phone .wrap{padding-block:0 calc(84px + env(safe-area-inset-bottom,0px))}
+.phone .title-screen{padding-top:16px}
+.pstrip{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:10px 8px;margin-bottom:14px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:6px}
+.pstrip-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;font-size:.88rem;color:var(--mute)}
+.pstrip-top b{font-family:var(--display);font-weight:400;font-size:1rem;color:var(--gold)}
+.pstrip-meters{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:10px}
+.pstrip .meter-top{font-size:.76rem}
+.pstrip .track{height:7px}
+.phone main{display:flex;flex-direction:column;gap:14px;min-width:0}
+.phone .scene{aspect-ratio:640/180}
+.phone .chap h2{font-size:1.55rem}
+.chap.compact{flex-direction:row;align-items:baseline;gap:10px;flex-wrap:wrap}
+.phone .chap.compact h2{font-size:1.2rem}
+.phone main .actions .btn{width:100%;min-height:48px;justify-content:center}
+.phone main .actions.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+.phone main .actions.grid2 > .btn:last-child:nth-child(odd){grid-column:1/-1}
+.phone .btn .note{font-size:.78rem}
+.phone .key{display:none}
+.phone .swing-track,.phone .hunt-track{height:76px}
+.phone .slot{width:clamp(50px,16vw,64px)}
+.phone .shield{width:clamp(42px,12vw,56px)}
+.phone .slot.you .shield{width:clamp(48px,14vw,62px)}
+.phone .log{max-height:none}
+.phone .tip{font-size:.9rem}
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:6;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;background:var(--panel);border-top:1px solid var(--line);
+  padding-top:4px;padding-bottom:calc(4px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.tabs .btn{border:0;border-radius:0;background:none;align-items:center;justify-content:center;min-height:52px;padding:6px 4px;font-size:1rem;color:var(--mute)}
+.tabs .btn .row1{justify-content:center}
+.tabs .btn[aria-current="page"]{color:var(--ink);font-weight:700;box-shadow:inset 0 3px 0 var(--blood)}
+.tabs .btn:hover:not(:disabled){background:none;color:var(--ink)}
+.phone .march .btn{width:100%;min-height:52px}
+.phone .foe{padding:12px 14px;gap:8px}
+.phone .foe h3{font-size:1.1rem}
+.phone .swing,.phone #battle-actions,.phone main section.event{scroll-margin-top:110px;scroll-margin-bottom:calc(76px + env(safe-area-inset-bottom,0px))}

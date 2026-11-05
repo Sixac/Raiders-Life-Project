@@ -4,6 +4,8 @@ A permadeath roguelite RPG about one ordinary raider of the Great Heathen Army, 
 
 Each of the sixteen chapters is a camp (train, feast, rest, hunt, buy gear, make offerings, deal with events) followed by a shield-wall battle (read the enemy’s move, time your blows, push their wall back). Death is permanent; points from finished runs buy starting bonuses for the next raider.
 
+It plays on phones too: below 720 pixels wide it switches to a phone layout with large buttons, a status bar at the top and tabs at the bottom. Players can force either layout under Settings.
+
 ## AI Notice
 
 Made with Claude
@@ -38,7 +40,8 @@ src/
     endings.ts      endings, score, legacy points, the skald’s verse
   save/storage.ts   where saves go (see "Saves" below)
   ui/               everything that touches the page
-    render.ts       all screens
+    render.ts       all screens, desktop and phone
+    layout.ts       picks the desktop or phone layout
     scenes.ts       the painted chapter scenes, drawn as SVG
     actions.ts      button and keyboard handling
     motion.ts       the moving markers for hunting and timed swings

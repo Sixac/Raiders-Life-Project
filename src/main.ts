@@ -5,6 +5,7 @@ import { loadLegacy, st } from "./core/state";
 import { bindInput, loadRun } from "./ui/actions";
 import { render } from "./ui/render";
 import { freshUiName } from "./ui/ui-state";
+import { watchLayout } from "./ui/layout";
 
 interface HotHook {
   snapshot?: (fn: () => unknown) => void;
@@ -17,6 +18,7 @@ st.interactive = true;
 loadLegacy();
 freshUiName();
 bindInput();
+watchLayout(render);
 
 // When the page is updated on claude.ai while someone is playing, carry the run across.
 const start = (d: unknown) => {
