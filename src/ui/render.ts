@@ -13,15 +13,32 @@ import { bar, btn, esc, shieldEl } from "./html";
 import { sceneSVG } from "./scenes";
 import { ui } from "./ui-state";
 import { syncMotion } from "./motion";
+import { isPhone, LAYOUT_NAMES, LAYOUT_NOTES } from "./layout";
+import type { Tab } from "./ui-state";
 
 const withArticle = (w: string) => (/^[aeiou]/i.test(w) ? "an " : "a ") + w;
 
 const tip = (k: string, html: string) =>
   st.L.seen[k] ? "" : `<aside class="tip" aria-label="Tip"><p>${html}</p><div>${btn("Got it", "dismiss", [k])}</div></aside>`;
 
-function chapterHead(): string {
+function chapterHead(compact = false): string {
   const G = g(), c = CH[G.ch];
+  // On a phone the battle needs the room, so it gets a one-line heading instead of the scene.
+  if (compact && isPhone()) return `<header class="chap compact"><span class="year">${c.year}</span><h2>${c.title}</h2></header>`;
   return `${sceneSVG(G.ch)}<header class="chap"><span class="year">${c.year}, chapter ${G.ch + 1} of ${CH.length}</span><h2>${c.title}</h2><p>${c.text}</p></header>`;
+}
+
+/** Phone layout: the latest lines of the saga log, since the log itself sits on another tab. */
+function recentView(): string {
+  if (!isPhone() || !ui.recent) return "";
+  const lines = g().log.slice(0, ui.recent).reverse();
+  return `<section class="recent" aria-label="What just happened">${lines.map((l) => `<p class="${l.c}">${l.t}</p>`).join("")}</section>`;
+}
+
+function settingsButtons(link = false): string {
+  const L = st.L, cls = link ? "link" : "";
+  return btn(link ? `Timed swings ${L.timing ? "on" : "off"}` : `Timed swings: ${L.timing ? "on" : "off"}`, "toggleTiming", [], { cls, note: link ? "" : L.timing ? "you time each attack yourself" : "attacks use your odds alone" })
+    + btn(`Layout: ${LAYOUT_NAMES[L.layout]}`, "cycleLayout", [], { cls, note: link ? "" : LAYOUT_NOTES[L.layout] });
 }
 
 function sheet(): string {
@@ -73,6 +90,7 @@ const logView = () =>
 function campView(): string {
   const G = g();
   let h = chapterHead();
+  h += recentView();
   h += tip("camp", "<b>Camp.</b> You get a few actions before each battle. Training raises a stat but costs morale, and below 30 morale you cannot train and you fight worse. Offerings to the gods fade by one favour each chapter. Wounds mend over chapters, and resting speeds them up.");
   if (G.ev) {
     const e = EVENT_BY_ID[G.ev];
@@ -92,7 +110,7 @@ function campView(): string {
     } else if (ui.sub === "gods") {
       h += `<div class="actions">${(Object.keys(GODS) as (keyof typeof GODS)[]).map((k) => btn(`Offer to ${GODS[k].n}`, "act", ["offer", k], { dis: G.silver < 2 || G.gods[k] >= 3, note: `2 silver. ${GODS[k].d}` })).join("")}${btn("Back", "sub", [null])}</div>`;
     } else {
-      h += `<div class="actions">
+      h += `<div class="actions grid2">
         ${btn("Train", "sub", ["train"], { dis: none, note: "raise a stat" })}
         ${btn("Feast", "act", ["feast"], { dis: none || G.silver < 3, note: "3 silver, morale +20" })}
         ${btn("Rest", "act", ["rest"], { dis: none, note: `health +${10 + (G.f.wife === 2 ? 4 : 0)}, wounds mend` })}
@@ -133,8 +151,9 @@ function pushView(): string {
 }
 function battleView(): string {
   const G = g(), B = b(), f = B.foes[B.i];
-  let h = chapterHead();
-  h += tip("battle2", "<b>Battle.</b> Watch what your enemy is about to do and answer it: block an overhead blow, strike first against a thrust, bash a hook or a shove. Attacks are timed: press when the red line is in the green mark, or in the bright centre for a perfect blow. Kills, bashes and war-cries push their wall back; lose ground and yours breaks. Number keys 1 to 7 pick actions, and Space swings.");
+  let h = chapterHead(true);
+  h += tip("battle2", `<b>Battle.</b> Watch what your enemy is about to do and answer it: block an overhead blow, strike first against a thrust, bash a hook or a shove. Attacks are timed: ${isPhone() ? "tap the moving bar" : "press"} when the red line is in the green mark, or in the bright centre for a perfect blow. Kills, bashes and war-cries push their wall back; lose ground and yours breaks.${isPhone() ? "" : " Number keys 1 to 7 pick actions, and Space swings."}`);
+  h += recentView();
   const remaining = B.foes.length - B.i - 1, I = INTENTS[B.intent], novice = st.L.fought < 3;
   h += `<section class="foe" aria-label="Your enemy"><div class="foe-top"><h3>${cap(f.n)}${f.champ ? ' <span class="chip bad">champion</span>' : ""}</h3><span class="muted">${remaining ? `${remaining} more behind him` : "the last one"}</span></div>
     ${bar("His health", Math.max(0, f.hp), f.mx, "hp")}
@@ -142,21 +161,23 @@ function battleView(): string {
     ${B.opened ? '<p class="good">He is off balance: +20% to hit with your next attack.</p>' : ""}
     ${pushView()}</section>`;
   if (B.flash) h += `<p class="flash ${B.flash.startsWith("Badly") ? "bad" : "good"}" aria-hidden="true">${B.flash}</p>`;
-  h += wallView();
+  // On a phone the controls come before the shield-wall, so they stay within reach.
+  const wall = wallView();
+  const place = (controls: string) => (isPhone() ? h + controls + wall : h + wall + controls);
   if (B.prompt) {
     const P = PROMPTS[B.prompt];
-    return h + `<section class="event" aria-label="In the thick of it"><p>${P.t()}</p><div class="actions">${P.o.map((o, i) => btn(o.l, "answer", [i], { odds: o.p ? o.p() : null })).join("")}</div></section>`;
+    return place(`<section class="event" aria-label="In the thick of it"><p>${P.t()}</p><div class="actions">${P.o.map((o, i) => btn(o.l, "answer", [i], { odds: o.p ? o.p() : null })).join("")}</div></section>`);
   }
   if (B.swing) {
     const s = B.swing;
-    return h + `<section class="swing" aria-label="Time your blow"><p><b>${({ strike: "Strike", heavy: "Heavy blow", berserk: "Berserk" } as Record<string, string>)[s.a]}:</b> press when the red line is in the green mark. The bright centre is a perfect blow.</p>
-      <div class="swing-track"><div class="zone" style="left:${s.zone[0]}%;width:${s.zone[1] - s.zone[0]}%"></div><div class="perfect" style="left:${s.perf[0]}%;width:${s.perf[1] - s.perf[0]}%"></div><div class="marker" id="marker" style="left:${s.pos}%"></div></div>
-      <div class="actions">${btn("Swing now", "release", [], { cls: "go", key: "Space" })}</div></section>`;
+    return place(`<section class="swing" aria-label="Time your blow"><p><b>${({ strike: "Strike", heavy: "Heavy blow", berserk: "Berserk" } as Record<string, string>)[s.a]}:</b> ${isPhone() ? "tap the bar" : "press"} when the red line is in the green mark. The bright centre is a perfect blow.</p>
+      <div class="swing-track" data-press="release" role="button" aria-label="Swing now"><div class="zone" style="left:${s.zone[0]}%;width:${s.zone[1] - s.zone[0]}%"></div><div class="perfect" style="left:${s.perf[0]}%;width:${s.perf[1] - s.perf[0]}%"></div><div class="marker" id="marker" style="left:${s.pos}%"></div></div>
+      <div class="actions">${btn("Swing now", "release", [], { cls: "go", key: "Space", press: true })}</div></section>`);
   }
   const [a1, b1] = dmgRange("strike"), [a2, b2] = dmgRange("heavy"), [a3, b3] = dmgRange("berserk"), [a4, b4] = dmgRange("bash");
   const best = (a: Action) => (novice && B.read && I.counter === a ? "best" : "");
   const foeN = (a: Action) => (B.read && mods(a, B.intent).noAttack ? "he won’t land a blow" : `he hits ${foeP(a, true)}%`);
-  h += `<div class="actions" id="battle-actions">
+  return place(`<div class="actions grid2" id="battle-actions">
     ${btn("Strike", "turn", ["strike"], { key: 1, cls: best("strike"), odds: hitP("strike", true), dis: B.sta < 1, note: `1 stamina, ${a1}–${b1} damage, ${foeN("strike")}` })}
     ${btn("Heavy blow", "turn", ["heavy"], { key: 2, cls: best("heavy"), odds: hitP("heavy", true), dis: B.sta < 2, note: `2 stamina, ${a2}–${b2} damage, ${foeN("heavy")}` })}
     ${btn("Raise your shield", "turn", ["guard"], { key: 3, cls: best("guard"), note: `+3 stamina, ${foeN("guard")}` })}
@@ -164,31 +185,30 @@ function battleView(): string {
     ${btn("War-cry", "turn", ["rally"], { key: 5, dis: B.sta < 1, note: `1 stamina, morale +10, ${foeN("rally")}` })}
     ${btn("Berserk", "turn", ["berserk"], { key: 6, odds: hitP("berserk", true), dis: G.mor < 60, note: G.mor < 60 ? "needs 60 morale" : `morale −20, ${a3}–${b3} damage` })}
     ${btn("Withdraw", "turn", ["flee"], { key: 7, odds: withdrawP(), note: B.broken ? "no shame now your wall has broken" : G.nid ? "a second time means outlawry" : "you will be called níðingr" })}
-  </div>`;
-  return h;
+  </div>`);
 }
 
 function aftermathView(): string {
   const G = g(), share = G.loot ?? 0;
-  return chapterHead()
+  return chapterHead() + recentView()
     + tip("loot", "<b>The hoard.</b> Loot is pooled and shared out by rank. Skimming doubles your take if nobody sees you; skill improves your odds.")
     + `<section class="event" aria-label="Sharing the loot"><p>The jarl’s men count out the hoard from the field. As ${withArticle(RANKS[G.rank].n.toLowerCase())}, your share is ${share} silver.</p>
     <div class="actions">${btn("Take your share", "loot", ["take"], { note: `${share} silver` })}${btn("Skim from the hoard", "loot", ["skim"], { odds: skimP(), note: `${share * 2} silver if unseen, flogging if caught` })}</div></section>`;
 }
 function huntView(): string {
   const H = st.H!;
-  return chapterHead() + `<section class="event" aria-label="Hunting"><p>${H.msg} Loose when the red line is inside the green mark. A better skill gives a wider mark.</p>
-    <div class="hunt-track"><div class="zone" style="left:${H.zone[0]}%;width:${H.zone[1] - H.zone[0]}%"></div><div class="marker" id="marker" style="left:${H.pos}%"></div></div>
-    <div class="actions" style="align-items:center">${btn("Loose an arrow", "loose", [], { cls: "go", key: "Space" })}<span class="arrows" aria-label="${H.arrows} arrows left">${[0, 1, 2].map((i) => `<span class="arrow${i >= H.arrows ? " spent" : ""}"></span>`).join("")}</span><span class="muted">${H.hits} hit${H.hits === 1 ? "" : "s"}</span></div></section>`;
+  return chapterHead() + `<section class="event" aria-label="Hunting"><p>${H.msg} ${isPhone() ? "Tap the bar" : "Loose"} when the red line is inside the green mark. A better skill gives a wider mark.</p>
+    <div class="hunt-track" data-press="loose" role="button" aria-label="Loose an arrow"><div class="zone" style="left:${H.zone[0]}%;width:${H.zone[1] - H.zone[0]}%"></div><div class="marker" id="marker" style="left:${H.pos}%"></div></div>
+    <div class="actions" style="align-items:center">${btn("Loose an arrow", "loose", [], { cls: "go", key: "Space", press: true })}<span class="arrows" aria-label="${H.arrows} arrows left">${[0, 1, 2].map((i) => `<span class="arrow${i >= H.arrows ? " spent" : ""}"></span>`).join("")}</span><span class="muted">${H.hits} hit${H.hits === 1 ? "" : "s"}</span></div></section>`;
 }
 function finaleView(): string {
   const G = g();
   const opt = (k: EndingId, prefix = "") => btn(ENDINGS[k].l!, "ending", [k], { note: `${prefix}ending bonus +${ENDINGS[k].bonus() + fordBonus(k)}` });
   if (G.ch === EDINGTON) {
-    return chapterHead() + `<section class="event" aria-label="After Edington"><p>Guthrum’s army falls back to its camp at Chippenham, and after two weeks of hunger it surrenders. Alfred lets the Danes live. Some will settle; some will look for war elsewhere. What will you do?</p>
+    return chapterHead() + recentView() + `<section class="event" aria-label="After Edington"><p>Guthrum’s army falls back to its camp at Chippenham, and after two weeks of hunger it surrenders. Alfred lets the Danes live. Some will settle; some will look for war elsewhere. What will you do?</p>
       <div class="actions">${btn("Cross the sea with the new army", "crossSea", [], { cls: "go", note: "the saga continues to Francia and beyond, to the year 900" })}${CHOSEN_ENDINGS.map((k) => opt(k, "end your saga here, ")).join("")}</div></section>`;
   }
-  return chapterHead() + `<section class="event" aria-label="The end of the fighting"><p>You are ${age()} winters old and have fought from East Anglia to Paris and back. There is no more war for you this side of the grave. How will you spend your last years?</p>
+  return chapterHead() + recentView() + `<section class="event" aria-label="The end of the fighting"><p>You are ${age()} winters old and have fought from East Anglia to Paris and back. There is no more war for you this side of the grave. How will you spend your last years?</p>
     <div class="actions">${CHOSEN_ENDINGS.map((k) => opt(k)).join("")}</div></section>`;
 }
 function overView(): string {
@@ -229,9 +249,31 @@ function titleView(): string {
       <div class="perks">${(Object.keys(PERKS) as (keyof typeof PERKS)[]).map((k) => btn(`${PERKS[k].n}, ${L.up[k]} of 3`, "up", [k], { dis: L.pts < 3 || L.up[k] >= 3, note: PERKS[k].d })).join("")}</div>
       ${L.runs ? `<p class="muted">Best saga score ${L.best} across ${L.runs} raider${L.runs === 1 ? "" : "s"}.</p>` : ""}
     </section>
-    <section class="panel" aria-label="Settings"><h3>Settings</h3><div class="actions">${btn(`Timed swings: ${L.timing ? "on" : "off"}`, "toggleTiming", [], { note: L.timing ? "you time each attack yourself" : "attacks use your odds alone" })}</div></section>
+    <section class="panel" aria-label="Settings"><h3>Settings</h3><div class="actions">${settingsButtons()}</div></section>
     <p class="muted">Sixteen chapters, each a camp and a battle. Death is permanent. Choose fights that suit your raider.</p>
   </div>`;
+}
+
+/* ---------- phone layout ---------- */
+/** A slim bar that stays at the top: where you are, and the numbers you check every turn. */
+function statusStrip(): string {
+  const G = g(), B = st.B, c = CH[G.ch];
+  return `<header class="pstrip" aria-label="Your raider at a glance">
+    <div class="pstrip-top"><b>${c.year}, ${cap(c.place)}</b><span>${G.silver} silver, reputation ${G.rep}</span></div>
+    <div class="pstrip-meters">${bar("Health", G.hp, maxhp(), "hp")}${B ? bar("Stamina", B.sta, maxSta(), "sta") : ""}${bar("Morale", G.mor, 100, "mo")}</div>
+  </header>`;
+}
+function phoneView(): string {
+  const G = g();
+  let body: string;
+  if (ui.tab === "raider") {
+    body = sheet() + `<section class="panel" aria-label="Settings"><h3>Settings</h3><div class="actions">${settingsButtons()}${btn("Save and leave", "toMenu", [], { note: "back to the title screen; your saga is kept" })}</div></section>`;
+  } else if (ui.tab === "map") body = mapView();
+  else if (ui.tab === "log") body = `<section class="panel" aria-label="Saga log"><h3>The saga so far</h3><ol class="log">${G.log.map((l) => `<li class="${l.c}">${l.t}</li>`).join("")}</ol></section>`;
+  else body = { camp: campView, battle: battleView, aftermath: aftermathView, hunt: huntView, finale: finaleView }[G.phase as "camp"]();
+  const tabs: [Tab, string][] = [["saga", G.phase === "battle" ? "Battle" : "Saga"], ["raider", "Raider"], ["map", "Map"], ["log", "Log"]];
+  return `${statusStrip()}<main>${body}</main>
+    <nav class="tabs" aria-label="Sections">${tabs.map(([k, label]) => btn(label, "tab", [k], { cls: "tab", attrs: ui.tab === k ? 'aria-current="page"' : "" })).join("")}</nav>`;
 }
 
 export function render(): void {
@@ -240,11 +282,15 @@ export function render(): void {
   const focusKey = active?.dataset?.key ?? null;
   const G = st.G;
   let h: string;
+  const phone = isPhone();
+  document.body.classList.toggle("phone", phone);
+  if (st.fresh.length) ui.recent = Math.min(st.fresh.length, 4);
   if (!G) h = titleView();
   else if (G.phase === "over") h = overView();
+  else if (phone) h = phoneView();
   else {
     const body = { camp: campView, battle: battleView, aftermath: aftermathView, hunt: huntView, finale: finaleView }[G.phase]();
-    h = `<div class="top"><span class="brand">A Raider’s Life</span><span class="progress"><span>${CH[G.ch].year}, ${cap(CH[G.ch].place)}</span>${btn(`Timed swings ${st.L.timing ? "on" : "off"}`, "toggleTiming", [], { cls: "link" })}${btn("Save and leave", "toMenu", [], { cls: "link" })}</span></div>
+    h = `<div class="top"><span class="brand">A Raider’s Life</span><span class="progress"><span>${CH[G.ch].year}, ${cap(CH[G.ch].place)}</span>${settingsButtons(true)}${btn("Save and leave", "toMenu", [], { cls: "link" })}</span></div>
       <div class="grid"><main>${body}</main><aside>${sheet()}${mapView()}${logView()}</aside></div>`;
   }
   app.innerHTML = h;
@@ -254,8 +300,12 @@ export function render(): void {
   if (swingBtn) swingBtn.focus({ preventScroll: true });
   else if (focusKey) {
     let el = document.querySelector<HTMLButtonElement>(`[data-key="${CSS.escape(focusKey)}"]`);
-    if (!el || el.disabled) el = document.querySelector("main .btn:not(:disabled), .title-screen .btn:not(:disabled)");
+    if (!el || el.disabled) el = phone ? null : document.querySelector("main .btn:not(:disabled), .title-screen .btn:not(:disabled)");
     el?.focus({ preventScroll: true });
+  }
+  // Phone battles: bring the controls back into view after each turn.
+  if (phone && G?.phase === "battle" && ui.tab === "saga") {
+    document.querySelector(".swing, #battle-actions, section.event")?.scrollIntoView({ block: "nearest" });
   }
   saveRun();
   syncMotion();

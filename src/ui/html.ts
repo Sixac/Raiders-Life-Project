@@ -3,7 +3,13 @@ import { cl } from "../core/random";
 
 export const esc = (s: unknown) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 
-export interface BtnOpts { cls?: string; dis?: boolean; odds?: number | null; note?: string; key?: string | number }
+export interface BtnOpts {
+  cls?: string; dis?: boolean; odds?: number | null; note?: string; key?: string | number;
+  /** Fire on pointer-down instead of click, for timing-sensitive buttons. */
+  press?: boolean;
+  /** Extra attributes, e.g. aria-current. */
+  attrs?: string;
+}
 
 /**
  * A button that runs a named action from ui/actions.ts with the given arguments.
@@ -11,7 +17,7 @@ export interface BtnOpts { cls?: string; dis?: boolean; odds?: number | null; no
  */
 export function btn(label: string, action: string, args: (string | number | null)[] = [], o: BtnOpts = {}): string {
   const a = esc(JSON.stringify(args));
-  return `<button type="button" class="btn ${o.cls || ""}" data-act="${action}" data-args="${a}" data-key="${esc(action)}${a}"${o.dis ? " disabled" : ""}>`
+  return `<button type="button" class="btn ${o.cls || ""}" data-act="${action}" data-args="${a}" data-key="${esc(action)}${a}"${o.press ? ` data-press="${action}"` : ""}${o.attrs ? " " + o.attrs : ""}${o.dis ? " disabled" : ""}>`
     + `<span class="row1">${o.key !== undefined ? `<span class="key" aria-hidden="true">${o.key}</span>` : ""}<span>${label}</span>${o.odds != null ? `<span class="odds">${o.odds}%</span>` : ""}</span>`
     + `${o.note ? `<span class="note">${o.note}</span>` : ""}</button>`;
 }

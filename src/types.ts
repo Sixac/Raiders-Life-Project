@@ -9,6 +9,7 @@ export type IntentId = "overhead" | "thrust" | "hook" | "hold" | "shove";
 export type Action = "strike" | "heavy" | "berserk" | "rally" | "guard" | "bash" | "flee";
 export type Quality = "perfect" | "good" | "poor" | null;
 export type PerkId = "str" | "skl" | "end" | "hoard";
+export type Layout = "auto" | "phone" | "desktop";
 export type LogClass = "" | "head" | "good" | "bad";
 
 export interface Crew { n: string; hp: number; mx: number }
@@ -100,6 +101,8 @@ export interface Legacy {
   runs: number;
   fought: number;
   timing: boolean;
+  /** Screen layout: automatic switches to the phone layout on narrow screens. */
+  layout: Layout;
 }
 
 /* ---------- content ---------- */
