@@ -12,7 +12,7 @@ Made with Claude
 
 ## Getting started
 
-You need [Node.js](https://nodejs.org) 18 or newer.
+You need [Node.js](https://nodejs.org) 22.12 or newer.
 
 ```sh
 npm install

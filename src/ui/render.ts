@@ -9,7 +9,7 @@ import { eventText, optionEnabled, optionOdds } from "../core/events";
 import { smithItems, trainP } from "../core/camp";
 import { dmgRange, foeP, hitP, mods, PROMPTS, skimP, withdrawP } from "../core/combat";
 import { CHOSEN_ENDINGS, ENDINGS, fordBonus } from "../core/endings";
-import { bar, btn, esc, shieldEl } from "./html";
+import { bar, btn, esc, logItems, shieldEl } from "./html";
 import { sceneSVG } from "./scenes";
 import { ui } from "./ui-state";
 import { syncMotion } from "./motion";
@@ -32,7 +32,7 @@ function chapterHead(compact = false): string {
 function recentView(): string {
   if (!isPhone() || !ui.recent) return "";
   const lines = g().log.slice(0, ui.recent).reverse();
-  return `<section class="recent" aria-label="What just happened">${lines.map((l) => `<p class="${l.c}">${l.t}</p>`).join("")}</section>`;
+  return `<section class="recent" aria-label="What just happened">${logItems(lines, "p")}</section>`;
 }
 
 function settingsButtons(link = false): string {
@@ -84,7 +84,7 @@ function mapView(): string {
     <polyline class="route" points="${route}"/>${pts}</svg></section>`;
 }
 const logView = () =>
-  `<section class="panel" aria-label="Saga log"><h3>The saga so far</h3><ol class="log">${g().log.slice(0, 40).map((l) => `<li class="${l.c}">${l.t}</li>`).join("")}</ol></section>`;
+  `<section class="panel" aria-label="Saga log"><h3>The saga so far</h3><ol class="log">${logItems(g().log.slice(0, 40))}</ol></section>`;
 
 /* ---------- camp ---------- */
 function campView(): string {
@@ -94,7 +94,7 @@ function campView(): string {
   h += tip("camp", "<b>Camp.</b> You get a few actions before each battle. Training raises a stat but costs morale, and below 30 morale you cannot train and you fight worse. Offerings to the gods fade by one favour each chapter. Wounds mend over chapters, and resting speeds them up.");
   if (G.ev) {
     const e = EVENT_BY_ID[G.ev];
-    h += `<section class="event" aria-label="Event"><p>${eventText(e)}</p><div class="actions">${e.options.map((o, i) => btn(o.label, "choose", [i], { odds: optionOdds(o), dis: !optionEnabled(o) })).join("")}</div></section>`;
+    h += `<section class="event" aria-label="Event"><p>${esc(eventText(e))}</p><div class="actions">${e.options.map((o, i) => btn(o.label, "choose", [i], { odds: optionOdds(o), dis: !optionEnabled(o) })).join("")}</div></section>`;
   } else {
     const none = G.acts < 1;
     h += `<p class="acts-left">${none ? "No camp actions left. Time to march." : `${G.acts} camp action${G.acts === 1 ? "" : "s"} left`}</p>`;
@@ -166,7 +166,7 @@ function battleView(): string {
   const place = (controls: string) => (isPhone() ? h + controls + wall : h + wall + controls);
   if (B.prompt) {
     const P = PROMPTS[B.prompt];
-    return place(`<section class="event" aria-label="In the thick of it"><p>${P.t()}</p><div class="actions">${P.o.map((o, i) => btn(o.l, "answer", [i], { odds: o.p ? o.p() : null })).join("")}</div></section>`);
+    return place(`<section class="event" aria-label="In the thick of it"><p>${esc(P.t())}</p><div class="actions">${P.o.map((o, i) => btn(o.l, "answer", [i], { odds: o.p ? o.p() : null })).join("")}</div></section>`);
   }
   if (B.swing) {
     const s = B.swing;
@@ -269,7 +269,7 @@ function phoneView(): string {
   if (ui.tab === "raider") {
     body = sheet() + `<section class="panel" aria-label="Settings"><h3>Settings</h3><div class="actions">${settingsButtons()}${btn("Save and leave", "toMenu", [], { note: "back to the title screen; your saga is kept" })}</div></section>`;
   } else if (ui.tab === "map") body = mapView();
-  else if (ui.tab === "log") body = `<section class="panel" aria-label="Saga log"><h3>The saga so far</h3><ol class="log">${G.log.map((l) => `<li class="${l.c}">${l.t}</li>`).join("")}</ol></section>`;
+  else if (ui.tab === "log") body = `<section class="panel" aria-label="Saga log"><h3>The saga so far</h3><ol class="log">${logItems(G.log)}</ol></section>`;
   else body = { camp: campView, battle: battleView, aftermath: aftermathView, hunt: huntView, finale: finaleView }[G.phase as "camp"]();
   const tabs: [Tab, string][] = [["saga", G.phase === "battle" ? "Battle" : "Saga"], ["raider", "Raider"], ["map", "Map"], ["log", "Log"]];
   return `${statusStrip()}<main>${body}</main>
