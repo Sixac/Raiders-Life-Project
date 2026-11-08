@@ -78,7 +78,7 @@
     ]
   },
   {
-    "id": "child", "chapters": [6, 13], "when": { "flags": { "wife": 2 }, "notFlags": ["son"] },
+    "id": "child", "chapters": [6, 9], "when": { "flags": { "wife": 2 }, "notFlags": ["son"] },
     "text": "Eadgyth tells you she is with child.",
     "options": [
       { "label": "Swear to see the child grown",
@@ -220,6 +220,170 @@
         "pass": { "text": "The old men at the fire drink with you. Morale +5, reputation +1.", "mor": 5, "rep": 1 } },
       { "label": "Say nothing",
         "pass": { "text": "You think of Edington and say nothing." } }
+    ]
+  },
+  {
+    "id": "ghent_winter", "chapters": [8, 8],
+    "text": "The army winters in the abbey of Saint Bavo at Ghent. The monks fled with their saint’s bones, but they left the cellars full.",
+    "options": [
+      { "label": "Strip the lead from the abbey roof",
+        "pass": { "text": "It sells well to a Frisian trader, and the hall leaks all winter. Silver +8, morale −3.", "silver": 8, "mor": -3 } },
+      { "label": "Sit out the winter by the fire",
+        "pass": { "text": "Long nights, old stories and Frankish wine. Health +5, morale +5.", "hp": 5, "mor": 5 } }
+    ]
+  },
+  {
+    "id": "saucourt_carts", "chapters": [9, 9], "priority": true,
+    "text": "The army is coming back from the Somme heavy with plunder when scouts report King Louis’s Franks close behind. The jarl orders the carts left by the road so the army can move faster.",
+    "options": [
+      { "label": "Leave your cart behind",
+        "pass": { "text": "You march light and grumble every step. Morale −4.", "mor": -4 } },
+      { "label": "Keep your cart and fall behind the column (endurance)", "check": { "stat": "end", "diff": 1 },
+        "pass": { "text": "You catch up by nightfall with your plunder. Silver +10.", "silver": 10 },
+        "fail": { "text": "Frankish riders catch the stragglers on the road. You lose the cart and nearly your life. Health −6.", "hp": -6, "woundChance": 30 } }
+    ]
+  },
+  {
+    "id": "sigfred_tribute", "chapters": [9, 10],
+    "text": "News comes from the Meuse: the emperor has paid Sigfred’s army more than two thousand pounds of silver to leave his lands, and given Godfrid a county in Frisia and a Frankish princess for a wife.",
+    "options": [
+      { "label": "Say the emperor is buying his own ruin",
+        "pass": { "text": "The bench laughs and drinks to it. Morale +4.", "mor": 4 } },
+      { "label": "Go to Sigfred’s camp and ask for a share (skill)", "check": { "stat": "skl", "diff": 1 },
+        "pass": { "text": "An old shipmate rows for Sigfred now, and he is generous. Silver +12.", "silver": 12 },
+        "fail": { "text": "Sigfred’s men run you out of their camp. Reputation −2.", "rep": -2 } }
+    ]
+  },
+  {
+    "id": "paris_fireships", "chapters": [10, 10],
+    "text": "The jarls fill three ships with brushwood and set them alight, to drive them against the great bridge of Paris.",
+    "options": [
+      { "label": "Pole the burning ships into the current (endurance)", "check": { "stat": "end", "diff": 1 },
+        "pass": { "text": "Your hands blister on the poles, but the ships reach the bridge. Reputation +4.", "rep": 4 },
+        "fail": { "text": "The smoke and heat drive you into the river. Health −5.", "hp": -5 } },
+      { "label": "Watch from the bank",
+        "pass": { "text": "The ships run aground on the stone piers and burn out. Morale −2.", "mor": -2 } }
+    ]
+  },
+  {
+    "id": "paris_flood", "chapters": [10, 10],
+    "text": "In the night the Seine floods and sweeps away the smaller bridge. Twelve Frankish warriors are cut off in its tower on the south bank.",
+    "options": [
+      { "label": "Join the attack on the tower (strength)", "check": { "stat": "str", "diff": 1 },
+        "pass": { "text": "The tower burns, and the defenders come out fighting. Reputation +4, silver +4.", "rep": 4, "silver": 4 },
+        "fail": { "text": "A stone from the top of the tower catches your helmet. Health −5.", "hp": -5, "woundChance": 25 } },
+      { "label": "Argue that the twelve be offered their lives",
+        "pass": { "text": "Nobody listens, but you sleep better than the men who took the tower. Morale +3, reputation −1.", "mor": 3, "rep": -1 } }
+    ]
+  },
+  {
+    "id": "famine", "chapters": [11, 11],
+    "text": "The harvest has failed across Francia. Horses die in the fields, and the army’s stores run low.",
+    "options": [
+      { "label": "Share your food with your crew",
+        "pass": { "text": "They will remember it. Health −3, morale +3, reputation +2.", "hp": -3, "mor": 3, "rep": 2 } },
+      { "label": "Buy grain from a Frisian trader (8 silver)", "pay": 8,
+        "pass": { "text": "Bread, at a robber’s price. Health +4, morale +2.", "hp": 4, "mor": 2 } },
+      { "label": "Tighten your belt",
+        "pass": { "text": "Hunger gnaws at you. Morale −5.", "mor": -5 } }
+    ]
+  },
+  {
+    "id": "dyle_ditch", "chapters": [11, 11],
+    "text": "The army’s camp on the Dyle sits in a bend of the river, with marsh on two sides. The jarls want a ditch dug across the dry ground.",
+    "options": [
+      { "label": "Dig through the night (endurance)", "check": { "stat": "end", "diff": 0 },
+        "pass": { "text": "By dawn the ditch is chest-deep, and the jarl sees whose spade it was. Reputation +3.", "rep": 3 },
+        "fail": { "text": "You are asleep on your spade by midnight, and the steersman tells everyone. Reputation −1, morale −2.", "rep": -1, "mor": -2 } },
+      { "label": "Let the young men dig",
+        "pass": { "text": "You rest instead. Health +4.", "hp": 4 } }
+    ]
+  },
+  {
+    "id": "appledore", "chapters": [12, 12],
+    "text": "Back in England, the fleet rows up from the coast of Kent and finds a half-built English fort in the marsh. Its builders have fled.",
+    "options": [
+      { "label": "Finish the rampart and make it yours (endurance)", "check": { "stat": "end", "diff": 1 },
+        "pass": { "text": "Your part of the wall is the best in camp. Reputation +3.", "rep": 3 },
+        "fail": { "text": "A timber slips and crushes your foot. Health −4.", "hp": -4 } },
+      { "label": "Raid the farms of the Weald", "chance": 60,
+        "pass": { "text": "Kentish pigs and a silver brooch. Silver +6.", "silver": 6 },
+        "fail": { "text": "The Kentish fyrd is waiting at the ford. Health −5.", "hp": -5 } }
+    ]
+  },
+  {
+    "id": "haesten_family", "chapters": [13, 13],
+    "text": "When the English took the fort at Benfleet, they took Hæsten’s wife and two sons with it. Now King Alfred has sent all three back unharmed: one boy is his godson, the other is godson to Ealdorman Æthelred.",
+    "options": [
+      { "label": "Call it the act of a fool",
+        "pass": { "text": "The bench laughs. Morale +3.", "mor": 3 } },
+      { "label": "Call it the act of a king who keeps his word",
+        "pass": { "text": "A few of the older men nod. Morale +1, reputation +1.", "mor": 1, "rep": 1 } }
+    ]
+  },
+  {
+    "id": "buttington_rush", "chapters": [13, 13],
+    "text": "Trapped on the island at Buttington, the jarls mean to break out across the river at first light. Someone has to lead the rush into the English shields.",
+    "options": [
+      { "label": "Lead the first rush (strength)", "check": { "stat": "str", "diff": 2 },
+        "pass": { "text": "You are first across, and the army follows your shield. Reputation +6.", "rep": 6 },
+        "fail": { "text": "You are first across, and the English are ready for you. Health −7.", "hp": -7, "wound": "random" } },
+      { "label": "Stay with your own crew",
+        "pass": { "text": "Another man leads the rush." } }
+    ]
+  },
+  {
+    "id": "chester", "chapters": [13, 14],
+    "text": "The army shelters inside the old Roman walls of Chester, empty for centuries. The English burn the fields around it and drive the cattle away.",
+    "options": [
+      { "label": "Hunt in the Wirral marshes (endurance)", "check": { "stat": "end", "diff": 1 },
+        "pass": { "text": "Geese and a deer: your crew eats tonight. Morale +5.", "mor": 5 },
+        "fail": { "text": "An English patrol chases you back to the walls. Health −4.", "hp": -4 } },
+      { "label": "Search the old Roman buildings", "chance": 40,
+        "pass": { "text": "Under a fallen roof you find a jar of old coins. Silver +9.", "silver": 9 },
+        "fail": { "text": "Only rubble and nettles." } }
+    ]
+  },
+  {
+    "id": "lea_forts", "chapters": [14, 14], "priority": true,
+    "text": "King Alfred’s men are building two forts on the Lea below your ships. If they finish them, the ships will never reach the sea again.",
+    "options": [
+      { "label": "Burn their timber in the night (skill)", "check": { "stat": "skl", "diff": 2 },
+        "pass": { "text": "The timber burns, and the work stops for a week. Reputation +5.", "rep": 5 },
+        "fail": { "text": "The sentries are awake. Health −5.", "hp": -5, "woundChance": 30 } },
+      { "label": "Get ready to leave the ships and march overland",
+        "pass": { "text": "Leaving the ships for the Londoners to take hurts. Morale −4.", "mor": -4 } }
+    ]
+  },
+  {
+    "id": "son_spear", "chapters": [14, 14], "when": { "flags": { "son": 1 } },
+    "text": "Your son is nearly grown, and he has been practising with a spear behind the tents. He asks to come to the shield-wall with you.",
+    "options": [
+      { "label": "Let him carry your spare shield behind the wall",
+        "pass": { "text": "He stays behind the line and watches every blow. Morale +6.", "mor": 6 } },
+      { "label": "Send him home to his mother",
+        "pass": { "text": "He goes, angry, and you are glad of it. Morale +3.", "mor": 3 } }
+    ]
+  },
+  {
+    "id": "aethelwold", "chapters": [15, 15],
+    "text": "Æthelwold, King Alfred’s nephew, has come to York with a claim to the throne of Wessex. He promises the Danes plunder if they help him take it.",
+    "options": [
+      { "label": "Swear to him",
+        "pass": { "text": "He gives you a gold ring from his own hand. Silver +6, reputation +2.", "silver": 6, "rep": 2 } },
+      { "label": "Say no West Saxon will ever be king of the Danes",
+        "pass": { "text": "Half the hall agrees with you. Morale +3.", "mor": 3 } }
+    ]
+  },
+  {
+    "id": "old_skald", "when": { "minAge": 45, "minKills": 20 },
+    "text": "A young skald from Iceland wants to hear about Ashdown and Edington from a man who stood there.",
+    "options": [
+      { "label": "Tell it as it happened",
+        "pass": { "text": "He listens to every word. Reputation +3.", "rep": 3 } },
+      { "label": "Tell it better than it happened (skill)", "check": { "stat": "skl", "diff": 1 },
+        "pass": { "text": "By the end of the night the whole hall is listening. Reputation +5.", "rep": 5 },
+        "fail": { "text": "An old man who was at Ashdown corrects you in front of everyone. Reputation −2.", "rep": -2 } }
     ]
   },
   {
