@@ -28,9 +28,9 @@ npm run build      # build dist/index.html, one self-contained file
 ```
 src/
   content/
-    chapters.json   the 16 chapters: year, place, text, enemies, map position, scene
+    chapters.json   the 16 chapters: year, place, text, enemies and how they fight, map position, scene
     events.json     the camp events and their choices
-    tables.ts       tuning tables: ranks, gear, training, enemies, loot, prices, wounds, gods, perks, enemy moves
+    tables.ts       tuning tables: ranks, gear, training, enemies, enemy moves and kinds, feints, loot, prices, wounds, gods, perks
   core/             the rules, with no browser code (so tests can run them)
     state.ts        the game state and values derived from it
     camp.ts         new runs, camp actions, hunting, moving between chapters

@@ -1,5 +1,5 @@
 /* Tuning tables: ranks, gear, wounds, gods, legacy perks, enemy moves. */
-import type { Action, Chapter, GameEvent, GodId, IntentId, PerkId, WoundId } from "../types";
+import type { Action, Chapter, FoeKind, GameEvent, GodId, IntentId, PerkId, WoundId } from "../types";
 import chaptersJson from "./chapters.json";
 import eventsJson from "./events.json";
 
@@ -86,11 +86,33 @@ export const PERKS: Record<PerkId, { n: string; d: string }> = {
 export const COST: Record<Action, number> = { strike: 1, heavy: 2, berserk: 0, rally: 1, guard: 0, bash: 1, flee: 0 };
 export const ATTACKS: Action[] = ["strike", "heavy", "berserk"];
 
-/** Enemy moves: w is the base weight when drawing the next move. */
-export const INTENTS: Record<IntentId, { w: number; t: string; d: string; hint: string; counter: Action }> = {
-  overhead: { w: 3, t: "He raises his weapon high", d: "for an overhead blow.", hint: "Raise your shield: you block it and leave him open.", counter: "guard" },
-  thrust: { w: 3, t: "He draws his spear back", d: "to thrust under your shield.", hint: "Strike first. A raised shield helps less against a low thrust.", counter: "strike" },
-  hook: { w: 2, t: "He reaches for your shield rim", d: "to hook it down with his axe.", hint: "Bash him back. Raising your shield plays into his hands.", counter: "bash" },
-  hold: { w: 2, t: "He crouches behind his shield", d: "and waits.", hint: "He won’t attack. A heavy blow can split his shield; a quick strike will glance off.", counter: "heavy" },
-  shove: { w: 2, t: "He sets his shoulder to his shield", d: "to shove your line back.", hint: "Bash or brace behind your shield, or your wall gives ground.", counter: "bash" },
+/**
+ * Enemy moves. t and d describe the tell you see; as names it when he only pretends to it;
+ * reveal says what he really did when he fooled you with a feint.
+ */
+export const INTENTS: Record<IntentId, { t: string; d: string; hint: string; counter: Action; as: string; reveal: string }> = {
+  overhead: { t: "He raises his weapon high", d: "for an overhead blow.", hint: "Raise your shield: you block it and leave him open.", counter: "guard", as: "an overhead blow", reveal: "his blow comes down from high" },
+  thrust: { t: "He draws his spear back", d: "to thrust under your shield.", hint: "Strike first. A raised shield helps less against a low thrust.", counter: "strike", as: "a thrust", reveal: "he thrusts low, under your shield" },
+  hook: { t: "He reaches for your shield rim", d: "to hook it down with his axe.", hint: "Bash him back. Raising your shield plays into his hands.", counter: "bash", as: "a hook at your shield", reveal: "he hooks your shield rim" },
+  hold: { t: "He crouches behind his shield", d: "and waits.", hint: "He won’t attack. A heavy blow can split his shield; a quick strike will glance off.", counter: "heavy", as: "waiting behind his shield", reveal: "he stays crouched behind his shield" },
+  shove: { t: "He sets his shoulder to his shield", d: "to shove your line back.", hint: "Bash or brace behind your shield, or your wall gives ground.", counter: "bash", as: "a shove", reveal: "he shoves into your shield" },
+  charge: { t: "He spurs his horse at the wall", d: "to ride you down.", hint: "Raise your shield and brace: a horse will not ride into a solid wall of shields.", counter: "guard", as: "a charge", reveal: "he spurs his horse at you" },
 };
+
+/**
+ * Kinds of enemy. Each chapter in chapters.json names the kind of its ordinary enemies and of its
+ * champion (foeKinds). moves sets how often each move comes; feint is the chance he shows a false one.
+ */
+export const FOE_KINDS: Record<FoeKind, { note: string; moves: Partial<Record<IntentId, number>>; feint: number }> = {
+  levy: { note: "A farmer with a shield: he shoves and holds more than he strikes.", moves: { shove: 4, hold: 3, overhead: 2, thrust: 2, hook: 1 }, feint: 0 },
+  spear: { note: "A spearman: expect thrusts under your shield.", moves: { thrust: 6, hold: 2, shove: 2, overhead: 1, hook: 1 }, feint: 0 },
+  axe: { note: "An axeman: watch for blows from high and hooks at your shield.", moves: { hook: 5, overhead: 4, shove: 2, hold: 1 }, feint: 0 },
+  rider: { note: "A horseman: he may charge the wall.", moves: { charge: 4, thrust: 3, overhead: 2 }, feint: 0 },
+  elite: { note: "A seasoned warrior: he may feint.", moves: { overhead: 4, hook: 3, thrust: 2, hold: 2, shove: 1 }, feint: 0.2 },
+};
+
+/**
+ * Feints: extra chance for champions, and for everyone in the long wars after Edington.
+ * Your chance to see through one is seeBase + seePerSkill × skill, up to seeMax (percent).
+ */
+export const FEINTS = { champion: 0.1, lateFrom: 8, late: 0.1, seeBase: 15, seePerSkill: 6, seeMax: 75 };

@@ -10,7 +10,7 @@ import { MemoryStore, useStore } from "../src/save/storage";
 import { maxhp, st } from "../src/core/state";
 import { act, hireSide, newGame } from "../src/core/camp";
 import { choose, optionEnabled } from "../src/core/events";
-import { answer, loot, march, resolve, turn } from "../src/core/combat";
+import { answer, loot, march, resolve, turn, visibleIntent } from "../src/core/combat";
 import { crossSea, ending, ENDINGS } from "../src/core/endings";
 import { ARMOUR, ATTACKS, CH, COST, EDINGTON, EVENT_BY_ID, FRANKISH_FROM, GIFT, HIRE, INTENTS, RANKS, WEAPONS } from "../src/content/tables";
 
@@ -73,7 +73,9 @@ function campStep(): void {
 function battleStep(p: Profile): void {
   const G = st.G!, B = st.B!;
   if (B.prompt) { answer(Math.random() < 0.5 ? 0 : 1); return; }
-  let a: Action = p.careful && B.read ? INTENTS[B.intent].counter : "strike";
+  // Only what a player could see: a feint fools the bot unless it was seen through.
+  const seen = visibleIntent().id;
+  let a: Action = p.careful && seen ? INTENTS[seen].counter : "strike";
   if (!p.careful && Math.random() < 0.2) a = (["strike", "heavy", "guard", "bash", "rally"] as Action[])[Math.floor(Math.random() * 5)];
   if (a === "strike" && G.mor >= 80) a = "berserk";
   if (a === "heavy" && B.sta < 2) a = "guard";

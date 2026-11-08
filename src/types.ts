@@ -5,7 +5,9 @@ export type GodId = "odin" | "thor" | "freyr";
 export type WoundId = "arm" | "head" | "ribs" | "gash";
 export type EndingId = "baptism" | "sail" | "danelaw" | "north" | "desert" | "death" | "outlaw";
 export type Phase = "camp" | "battle" | "aftermath" | "hunt" | "finale" | "over";
-export type IntentId = "overhead" | "thrust" | "hook" | "hold" | "shove";
+export type IntentId = "overhead" | "thrust" | "hook" | "hold" | "shove" | "charge";
+/** How an enemy fights; see FOE_KINDS in content/tables.ts. */
+export type FoeKind = "levy" | "spear" | "axe" | "rider" | "elite";
 export type Action = "strike" | "heavy" | "berserk" | "rally" | "guard" | "bash" | "flee";
 export type Quality = "perfect" | "good" | "poor" | null;
 export type PerkId = "str" | "skl" | "end" | "hoard";
@@ -55,7 +57,7 @@ export interface Game {
   res?: RunResult;
 }
 
-export interface Foe { n: string; hp: number; mx: number; atk: number; df: number; champ: boolean }
+export interface Foe { n: string; hp: number; mx: number; atk: number; df: number; champ: boolean; kind: FoeKind }
 
 export interface Swing {
   a: Action;
@@ -76,8 +78,15 @@ export interface Battle {
   /** Push of the walls, -5 (ours breaks) to +5 (theirs breaks). */
   line: number;
   opened: boolean;
+  /** His real next move. */
   intent: IntentId;
+  /** Whether you can read him at all this round. */
   read: boolean;
+  /** The move he shows you: the real one, or a different one when he feints. */
+  shown: IntentId;
+  feint: boolean;
+  /** Whether you saw through the feint. */
+  seen: boolean;
   prompt: string | null;
   prompts: number;
   swing: Swing | null;
@@ -123,6 +132,8 @@ export interface Chapter {
   /** [regular foe, champion]. Written as they read mid-sentence ("the thegn’s hearth-guard"). */
   foes: [string, string];
   foeCount: number;
+  /** How the ordinary enemies and the champion fight. */
+  foeKinds: [FoeKind, FoeKind];
   map: { x: number; y: number; lx: number; ly: number; anchor: "start" | "middle" | "end" };
   alt: string;
   scene: SceneSpec;

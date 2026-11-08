@@ -116,6 +116,8 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--frost);outline-
 .intent{border-left:3px solid var(--gold);padding:4px 0 4px 12px;display:flex;flex-direction:column;gap:2px}
 .intent b{font-size:1.08rem}
 .intent .hint{font-size:.9rem;color:var(--mute)}
+.intent .hint.seen{color:var(--good);font-weight:600}
+.foe-kind{font-size:.9rem;margin-top:-4px}
 .push{display:flex;flex-direction:column;gap:4px}
 .push-track{display:grid;grid-template-columns:repeat(11,minmax(0,1fr));gap:3px}
 .push-track span{height:12px;background:var(--line);border-radius:2px}

@@ -1,6 +1,6 @@
 /* Checks the data files, so a typo in events.json or chapters.json fails here instead of in play. */
 import { describe, expect, it } from "vitest";
-import { CH, EVENTS, FINALES, WOUNDS } from "../src/content/tables";
+import { CH, EVENTS, FINALES, FOE_KINDS, WOUNDS } from "../src/content/tables";
 import type { Cond, Outcome } from "../src/types";
 
 const STATS = ["str", "skl", "end", "fight"];
@@ -35,6 +35,8 @@ describe("chapters", () => {
       expect(c.foeCount).toBeGreaterThanOrEqual(2);
       expect(c.alt.length).toBeGreaterThan(10);
       expect(["dawn", "day", "grey", "winter", "dusk", "night", "storm"]).toContain(c.scene.mood);
+      expect(c.foeKinds, `${c.place}: foeKinds`).toHaveLength(2);
+      for (const k of c.foeKinds) expect(Object.keys(FOE_KINDS), `${c.place}: foe kind`).toContain(k);
     }
   });
   it("ends at a finale", () => expect(FINALES).toContain(CH.length - 1));

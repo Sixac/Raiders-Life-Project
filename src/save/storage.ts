@@ -33,6 +33,9 @@ export class MemoryStore implements SaveStore {
 export let store: SaveStore = typeof localStorage !== "undefined" ? new BrowserStore() : new MemoryStore();
 export function useStore(s: SaveStore): void { store = s; }
 
-/** Keys and version are unchanged from the single-file game, so existing saves keep working. */
+/**
+ * The keys are unchanged from the single-file game, so existing saves keep working. The version goes up
+ * when a battle in progress can no longer be resumed; such a save picks up in camp before that battle.
+ */
 export const KEYS = { legacy: "raider-legacy", run: "raider-run" } as const;
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
