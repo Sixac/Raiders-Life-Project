@@ -1,0 +1,26 @@
+/*
+ * The game's two typefaces, bundled into the page instead of loaded from Google Fonts,
+ * so playing makes no requests to other sites. Only the Latin character set is included
+ * (it covers æ, ð, þ and the other letters the game uses); anything else falls back to Georgia.
+ * Both fonts are under the SIL Open Font License.
+ */
+@font-face {
+  font-family: "Alegreya"; font-style: normal; font-weight: 400; font-display: swap;
+  src: url("@fontsource/alegreya/files/alegreya-latin-400-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Alegreya"; font-style: italic; font-weight: 400; font-display: swap;
+  src: url("@fontsource/alegreya/files/alegreya-latin-400-italic.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Alegreya"; font-style: normal; font-weight: 600; font-display: swap;
+  src: url("@fontsource/alegreya/files/alegreya-latin-600-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Alegreya"; font-style: normal; font-weight: 700; font-display: swap;
+  src: url("@fontsource/alegreya/files/alegreya-latin-700-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Uncial Antiqua"; font-style: normal; font-weight: 400; font-display: swap;
+  src: url("@fontsource/uncial-antiqua/files/uncial-antiqua-latin-400-normal.woff2") format("woff2");
+}

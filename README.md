@@ -4,7 +4,7 @@ A permadeath roguelite RPG about one ordinary raider of the Great Heathen Army, 
 
 Each of the sixteen chapters is a camp (train, feast, rest, hunt, buy gear, make offerings, deal with events) followed by a shield-wall battle (read the enemy’s move, time your blows, push their wall back). Death is permanent; points from finished runs buy starting bonuses for the next raider.
 
-It plays on phones too: below 720 pixels wide it switches to a phone layout with large buttons, a status bar at the top and tabs at the bottom. Players can force either layout under Settings.
+It plays on phones too: below 720 pixels wide it switches to a phone layout with large buttons, a status bar at the top and tabs at the bottom. Players can force either layout under Settings. On the public site it can also be added to a phone’s home screen and played offline.
 
 ## AI Notice
 
@@ -21,7 +21,7 @@ npm test           # check the content files and simulate 7,500 runs
 npm run build      # build dist/index.html, one self-contained file
 ```
 
-`dist/index.html` is the whole game in one file. Open it in a browser, upload it anywhere, or use it as the front end of a desktop build.
+`dist/index.html` is the whole game in one file, fonts included. Open it in a browser, upload it anywhere, or use it as the front end of a desktop build. The other files in `dist` (icons, the link-preview image, `manifest.webmanifest` and `sw.js`) come from `public/` and are only needed on a website, for installing to a phone, offline play and link previews.
 
 ## Project layout
 
@@ -38,6 +38,8 @@ src/
     combat.ts       the battle: enemy moves, swings, the push of the walls, loot
     life.ts         health, wounds, crew and promotion
     endings.ts      endings, score, legacy points, the skald’s verse
+    savecode.ts     save codes: turning a save into text and checking codes before loading them
+    summary.ts      the one-line saga players can share
   save/storage.ts   where saves go (see "Saves" below)
   ui/               everything that touches the page
     render.ts       all screens, desktop and phone
@@ -45,10 +47,16 @@ src/
     scenes.ts       the painted chapter scenes, drawn as SVG
     actions.ts      button and keyboard handling
     motion.ts       the moving markers for hunting and timed swings
+    share.ts        copying and sharing, with a fallback when the clipboard is refused
+    offline.ts      offline play and installing (only on the https website)
+    fonts.css       the two typefaces, bundled into the page
     styles.css
   main.ts           browser entry point
 tests/
   content.test.ts   catches mistakes in the JSON files
+  savecode.test.ts  save codes round-trip, and damaged or invalid codes are refused
+  summary.test.ts   the line players share at the end
+  html.test.ts      names and other text are shown as typed, never as markup
   simulate.test.ts  plays thousands of runs with bots and checks the balance
   sim.ts            the bot and the balance report
 ```
@@ -112,6 +120,15 @@ Most of the numbers you would want to change are in `src/content/tables.ts`: ran
 
 The test fails when a change tips the game too far, for example if a careful player with average timing survives to 900 less than 15% or more than 45% of the time, if timing decides too much, if the top ranks come before Edington, or if one ending is best for nearly everyone. The limits are in `tests/simulate.test.ts`; the bot is in `tests/sim.ts`.
 
+## The public site
+
+- **No outside requests.** The fonts (Alegreya and Uncial Antiqua, both under the SIL Open Font License) are bundled into the page from the `@fontsource` packages, so visitors’ browsers never contact Google or anyone else. That also avoids the GDPR problem of loading Google Fonts from Google’s servers.
+- **Link previews.** `index.html` has a description and Open Graph tags, so links shared on Discord, Reddit or in messages show the title, a line of text and `public/preview.png`. If the game moves to another address, change `og:url` and `og:image` there; the share button uses `og:url` too.
+- **Offline and installable.** On the https site, `public/sw.js` keeps a copy of the game so it starts without a connection once it has been opened, and `public/manifest.webmanifest` lets phones add it to the home screen. The worker fetches from the network first, so players get new versions as soon as they are online. If you change the list of files it caches, change `CACHE` in `sw.js` so old copies are cleared.
+- **Sharing.** The end screen has a “Share your saga” button: on phones it opens the share sheet, elsewhere it copies a line such as “Ketil Ormsson, hersir, sailed home with 260 silver in 900. Saga score 309.” with a link to the game.
+
 ## Saves
+
+Saves live in the player’s browser. On the title screen, **Copy save code** turns the legacy and any saga in progress into a short code (compressed, about 600 characters) that can be kept as a backup or pasted into **Load a save code** on another device. Codes are checked field by field before loading, so a damaged or edited code is refused with a message instead of breaking the game; a saga saved in the middle of a battle resumes in camp just before it.
 
 Everything saved goes through the `SaveStore` interface in `src/save/storage.ts`. In the browser that is `localStorage` (the same keys as the original single-file game, so existing saves carry over). For a desktop build, write a `SaveStore` that reads and writes files and call `useStore(new YourStore())` at the top of `src/main.ts`, before `loadLegacy()`.
