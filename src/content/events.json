@@ -356,7 +356,7 @@
     ]
   },
   {
-    "id": "son_spear", "chapters": [14, 14], "when": { "flags": { "son": 1 } },
+    "id": "son_spear", "chapters": [13, 14], "priority": true, "when": { "flags": { "son": 1 } },
     "text": "Your son is nearly grown, and he has been practising with a spear behind the tents. He asks to come to the shield-wall with you.",
     "options": [
       { "label": "Let him carry your spare shield behind the wall",
