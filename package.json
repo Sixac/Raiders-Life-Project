@@ -2,6 +2,7 @@
   "name": "raiders-life",
   "version": "0.3.0",
   "description": "A permadeath roguelite RPG: one raider's life with the Great Heathen Army and after, 865 to 900.",
+  "license": "MIT",
   "private": true,
   "type": "module",
   "engines": {

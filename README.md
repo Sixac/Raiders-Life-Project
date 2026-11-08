@@ -134,3 +134,7 @@ The test fails when a change tips the game too far, for example if a careful pla
 Saves live in the player’s browser. On the title screen, **Copy save code** turns the legacy and any saga in progress into a short code (compressed, about 600 characters) that can be kept as a backup or pasted into **Load a save code** on another device. Codes are checked field by field before loading, so a damaged or edited code is refused with a message instead of breaking the game; a saga saved in the middle of a battle resumes in camp just before it.
 
 Everything saved goes through the `SaveStore` interface in `src/save/storage.ts`. In the browser that is `localStorage` (the same keys as the original single-file game, so existing saves carry over). For a desktop build, write a `SaveStore` that reads and writes files and call `useStore(new YourStore())` at the top of `src/main.ts`, before `loadLegacy()`.
+
+## License
+
+A Raider’s Life is released under the [MIT License](LICENSE). The two typefaces bundled into the built game, Alegreya and Uncial Antiqua, come from the `@fontsource` packages and keep their own license, the SIL Open Font License.
