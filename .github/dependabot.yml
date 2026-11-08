@@ -1,0 +1,23 @@
+# Keeps the build tools and GitHub Actions up to date with one grouped pull request a month.
+# New releases wait two weeks before they are offered, so a bad release has time to be caught.
+# Security fixes are separate: turn on "Dependabot security updates" under Settings > Advanced Security.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: monthly
+    cooldown:
+      default-days: 14
+    groups:
+      build-tools:
+        patterns: ["*"]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    cooldown:
+      default-days: 14
+    groups:
+      actions:
+        patterns: ["*"]
