@@ -5,7 +5,7 @@
     "title": "The landing in East Anglia",
     "text": "Your longship grounds on a cold beach. The East Anglians have bought peace with horses, but not every village got word.",
     "foes": ["East Anglian levyman", "thegn’s hearth-guard"],
-    "foeCount": 2,
+    "foeCount": 2, "foeKinds": ["levy", "elite"],
     "map": { "x": 178, "y": 170, "lx": -6, "ly": 3, "anchor": "end" },
     "alt": "Longships drawn up on a beach at dawn below a small village",
     "scene": {
@@ -30,7 +30,7 @@
     "title": "The road to York",
     "text": "Northumbria is torn between two rival kings. The army takes the city on All Saints’ Day, and the kings come back together to retake it.",
     "foes": ["Northumbrian axeman", "ealdorman’s retainer"],
-    "foeCount": 3,
+    "foeCount": 3, "foeKinds": ["axe", "elite"],
     "map": { "x": 140, "y": 104, "lx": -6, "ly": 3, "anchor": "end" },
     "alt": "The walls and minster of York with smoke rising, longships on the river",
     "scene": {
@@ -57,7 +57,7 @@
     "title": "Winter at Nottingham",
     "text": "The army holds the town while Mercia and Wessex camp outside the walls. Sallies and skirmishes fill the short days.",
     "foes": ["Mercian spearman", "Mercian housecarl"],
-    "foeCount": 3,
+    "foeCount": 3, "foeKinds": ["spear", "elite"],
     "map": { "x": 131, "y": 138, "lx": 6, "ly": 3, "anchor": "start" },
     "alt": "Snow over a walled town with enemy tents and campfires outside",
     "scene": {
@@ -82,7 +82,7 @@
     "title": "Frost at Reading",
     "text": "The army digs a rampart between the Thames and the Kennet. Wessex marches out to meet you.",
     "foes": ["Wessex fyrdman", "king’s thegn"],
-    "foeCount": 3,
+    "foeCount": 3, "foeKinds": ["levy", "elite"],
     "map": { "x": 141, "y": 199, "lx": 6, "ly": 3, "anchor": "start" },
     "alt": "A palisade between two rivers at dusk, with tents and a beached longship",
     "scene": {
@@ -105,7 +105,7 @@
     "title": "The ridge at Ashdown",
     "text": "The Saxons come up the slope with a young prince named Alfred at their head. A single stunted thorn tree stands between the lines.",
     "foes": ["Saxon shieldman", "Berkshire thegn"],
-    "foeCount": 3,
+    "foeCount": 3, "foeKinds": ["levy", "elite"],
     "map": { "x": 123, "y": 205, "lx": 0, "ly": 12, "anchor": "middle" },
     "alt": "A Saxon shield-wall along a chalk ridge, a lone thorn tree, and the Danish line in the foreground",
     "scene": {
@@ -127,7 +127,7 @@
     "title": "Winter at Repton",
     "text": "The army winters by the Trent and the Mercian king flees overseas. Some of the leaders talk of ploughland instead of plunder.",
     "foes": ["Mercian veteran", "royal hearth-guard"],
-    "foeCount": 3,
+    "foeCount": 3, "foeKinds": ["spear", "elite"],
     "map": { "x": 117, "y": 147, "lx": -6, "ly": 3, "anchor": "end" },
     "alt": "A moonlit church by a river, ringed by a bank, with ships drawn up and fires burning",
     "scene": {
@@ -151,7 +151,7 @@
     "title": "The siege at Exeter",
     "text": "Guthrum holds Exeter while Alfred’s army waits outside. Food runs short, and the fleet that should bring more is late.",
     "foes": ["Devon fyrdman", "Exeter garrison captain"],
-    "foeCount": 3,
+    "foeCount": 3, "foeKinds": ["spear", "elite"],
     "map": { "x": 72, "y": 224, "lx": -6, "ly": 3, "anchor": "end" },
     "alt": "Storm-tossed longships foundering below a walled hilltop town",
     "scene": {
@@ -174,7 +174,7 @@
     "title": "Edington",
     "text": "Alfred has come out of the marshes with the men of three shires. Guthrum calls for one last shield-wall.",
     "foes": ["Alfred’s fyrdman", "West Saxon champion"],
-    "foeCount": 4,
+    "foeCount": 4, "foeKinds": ["spear", "elite"],
     "map": { "x": 99, "y": 207, "lx": -6, "ly": 3, "anchor": "end" },
     "alt": "A long West Saxon shield-wall on the downs at dawn, facing the Danish line",
     "scene": {
@@ -196,7 +196,7 @@
     "title": "Crossing to Flanders",
     "text": "Some of the army will not settle. A new host gathers at Fulham and crosses the sea to Ghent, where the Frankish kings are quarrelling among themselves.",
     "foes": ["Frankish spearman", "count’s vassal"],
-    "foeCount": 3,
+    "foeCount": 3, "foeKinds": ["spear", "elite"],
     "map": { "x": 236, "y": 214, "lx": 6, "ly": 3, "anchor": "start" },
     "alt": "A fleet of longships with striped sails on a grey river below a Frankish abbey town",
     "scene": {
@@ -220,7 +220,7 @@
     "title": "The field at Saucourt",
     "text": "King Louis’s Franks catch the army heavy with plunder in the open fields of Ponthieu.",
     "foes": ["Frankish horseman", "Louis’s champion"],
-    "foeCount": 3,
+    "foeCount": 3, "foeKinds": ["rider", "elite"],
     "map": { "x": 196, "y": 252, "lx": -6, "ly": 3, "anchor": "end" },
     "alt": "Frankish warriors under a red banner advancing across open summer fields",
     "scene": {
@@ -241,7 +241,7 @@
     "title": "The siege of Paris",
     "text": "Hundreds of ships sail up the Seine. Two fortified bridges and the island city stand in the way.",
     "foes": ["Parisian defender", "Count Odo’s retainer"],
-    "foeCount": 4,
+    "foeCount": 4, "foeKinds": ["levy", "elite"],
     "map": { "x": 186, "y": 292, "lx": 6, "ly": 3, "anchor": "start" },
     "alt": "The island city of Paris at dusk with towered bridges and a river full of longships",
     "scene": {
@@ -269,7 +269,7 @@
     "title": "The camp on the Dyle",
     "text": "King Arnulf’s East Franks attack the fortified camp on the river Dyle. They come on foot, which no one expected.",
     "foes": ["East Frankish warrior", "Arnulf’s champion"],
-    "foeCount": 3,
+    "foeCount": 3, "foeKinds": ["axe", "elite"],
     "map": { "x": 262, "y": 224, "lx": 6, "ly": 3, "anchor": "start" },
     "alt": "A palisaded camp lit by fires at night, with an enemy line approaching by moonlight",
     "scene": {
@@ -292,7 +292,7 @@
     "title": "The fort at Benfleet",
     "text": "Hæsten’s army is back in England and has built a fort on the Essex marshes. While Hæsten is away raiding, the English attack it.",
     "foes": ["Londoner", "ealdorman’s thegn"],
-    "foeCount": 3,
+    "foeCount": 3, "foeKinds": ["levy", "elite"],
     "map": { "x": 182, "y": 201, "lx": 6, "ly": 3, "anchor": "start" },
     "alt": "A palisaded fort on flat marshland with reeds and beached ships under a grey sky",
     "scene": {
@@ -316,7 +316,7 @@
     "title": "Hunger at Buttington",
     "text": "The army is trapped on an island in the Severn. The horses have been eaten, and the English and Welsh are camped on both banks.",
     "foes": ["Mercian fyrdman", "Welsh spearman"],
-    "foeCount": 3,
+    "foeCount": 3, "foeKinds": ["levy", "spear"],
     "map": { "x": 70, "y": 160, "lx": -6, "ly": 3, "anchor": "end" },
     "alt": "A small fortified island in a river at dusk, with enemy tents on the far bank",
     "scene": {
@@ -340,7 +340,7 @@
     "title": "Ships on the Lea",
     "text": "The army hauls its ships up the river Lea and builds a fort above London. The Londoners come out to fight.",
     "foes": ["Londoner", "Edward’s thegn"],
-    "foeCount": 3,
+    "foeCount": 3, "foeKinds": ["levy", "elite"],
     "map": { "x": 160, "y": 192, "lx": -6, "ly": -5, "anchor": "end" },
     "alt": "Longships hauled up a wooded river bank beside a fort on a summer day",
     "scene": {
@@ -363,7 +363,7 @@
     "title": "The last summer at York",
     "text": "Alfred is dead. His nephew Æthelwold has fled to York, and the Danes there take him as their king. King Edward’s men come north.",
     "foes": ["Edward’s raider", "Kentish thegn"],
-    "foeCount": 4,
+    "foeCount": 4, "foeKinds": ["axe", "elite"],
     "map": { "x": 140, "y": 104, "lx": -6, "ly": 3, "anchor": "end" },
     "alt": "York at sunset with a raven banner flying over its walls",
     "scene": {

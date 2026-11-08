@@ -2,6 +2,7 @@
 import "./ui/styles.css";
 import type { Battle, Game } from "./types";
 import { loadLegacy, st } from "./core/state";
+import { SAVE_VERSION } from "./save/storage";
 import { bindInput, loadRun } from "./ui/actions";
 import { render } from "./ui/render";
 import { freshUiName } from "./ui/ui-state";
@@ -23,7 +24,7 @@ watchLayout(render);
 // When the page is updated on claude.ai while someone is playing, carry the run across.
 const start = (d: unknown) => {
   const s = d as { G?: Game; B?: Battle | null } | null;
-  if (s?.G) loadRun({ v: 3, G: s.G, B: s.B ?? null });
+  if (s?.G) loadRun({ v: SAVE_VERSION, G: s.G, B: s.B ?? null });
   render();
 };
 const hot = window.claude?.hot;

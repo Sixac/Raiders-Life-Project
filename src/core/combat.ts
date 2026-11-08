@@ -1,6 +1,6 @@
 /* The shield-wall battle: enemy moves, timed swings, the push of the walls, mid-fight choices, loot. */
 import type { Action, Foe, IntentId, Quality, Swing } from "../types";
-import { ARMOUR, ATTACKS, CH, COST, ENEMIES, INTENTS, JARL_GIFT, LOOT, RANKS, SWING } from "../content/tables";
+import { ARMOUR, ATTACKS, CH, COST, ENEMIES, FEINTS, FOE_KINDS, INTENTS, JARL_GIFT, LOOT, RANKS, SWING } from "../content/tables";
 import { cl, pct, pick, R, roll } from "./random";
 import { b, ck, crewAll, eSkl, eStr, exposed, g, hurt, keepLegacy, maxSta, say, st, tier } from "./state";
 import { addWound, fix, promote, refillCrew } from "./life";
@@ -9,17 +9,43 @@ import { die, isFinale } from "./endings";
 
 export const readP = () => cl(45 + eSkl() * 6, 45, 95);
 
+/** Chance (percent) to see through a feint. */
+export const seeP = () => cl(FEINTS.seeBase + eSkl() * FEINTS.seePerSkill, FEINTS.seeBase, FEINTS.seeMax);
+const kindOf = (f: Foe) => FOE_KINDS[f.kind ?? (f.champ ? "elite" : "levy")];
+
+function pickMove(w: Partial<Record<IntentId, number>>, not?: IntentId): IntentId {
+  const ks = (Object.keys(w) as IntentId[]).filter((k) => k !== not && (w[k] ?? 0) > 0);
+  if (!ks.length) return not ?? "thrust";
+  let r = Math.random() * ks.reduce((t, k) => t + w[k]!, 0);
+  for (const k of ks) { r -= w[k]!; if (r < 0) return k; }
+  return ks[ks.length - 1];
+}
+
+/** Choose his next move, whether you can read it, and whether he is feinting. */
 function newIntent(): void {
   const B = b(), f = B.foes[B.i];
   if (!f) return;
-  const w = Object.fromEntries(Object.entries(INTENTS).map(([k, v]) => [k, v.w])) as Record<IntentId, number>;
-  if (f.champ) { w.overhead += 2; w.hook += 1; }
-  if (B.line >= 3) w.hold += 2;
-  if (B.line <= -2) w.shove += 1;
-  const tot = Object.values(w).reduce((a, c) => a + c, 0);
-  let r = Math.random() * tot;
-  for (const k of Object.keys(w) as IntentId[]) { r -= w[k]; if (r < 0) { B.intent = k; break; } }
+  const kind = kindOf(f), w = { ...kind.moves };
+  // A beaten man turtles up; a winning one presses.
+  if (B.line >= 3 && w.hold) w.hold += 2;
+  if (B.line <= -2 && w.shove) w.shove += 1;
+  B.intent = pickMove(w);
   B.read = pct(readP());
+  const feint = kind.feint + (f.champ ? FEINTS.champion : 0) + (g().ch >= FEINTS.lateFrom ? FEINTS.late : 0);
+  B.feint = B.read && pct(feint * 100);
+  B.shown = B.feint ? pickMove(kind.moves, B.intent) : B.intent;
+  B.seen = B.feint && pct(seeP());
+}
+
+/**
+ * What you can tell about his next move: nothing (id null), the move he shows, or his real move
+ * when you saw through a feint. The screen and the balance bot both use only this.
+ */
+export function visibleIntent(): { id: IntentId | null; shown: IntentId | null; feintSeen: boolean } {
+  const B = b();
+  if (!B.read) return { id: null, shown: null, feintSeen: false };
+  const shown = B.shown ?? B.intent;
+  return B.feint && B.seen ? { id: B.intent, shown, feintSeen: true } : { id: shown, shown, feintSeen: false };
 }
 
 export function march(): void {
@@ -29,10 +55,11 @@ export function march(): void {
   for (let i = 0; i < c.foeCount; i++) {
     const champ = i === c.foeCount - 1 && G.ch > 0;
     const hp = 6 + Math.round(t * 2.5) + late + R(3) + (champ ? 4 : 0);
-    foes.push({ n: champ ? c.foes[1] : c.foes[0], hp, mx: hp, atk: 2 + Math.floor(t / 2) + (champ ? 1 : 0), df: Math.floor(t / 2) + (champ ? 1 : 0), champ });
+    foes.push({ n: champ ? c.foes[1] : c.foes[0], hp, mx: hp, atk: 2 + Math.floor(t / 2) + (champ ? 1 : 0), df: Math.floor(t / 2) + (champ ? 1 : 0), champ,
+      kind: c.foeKinds[champ ? 1 : 0] });
   }
   st.B = { foes, i: 0, sta: maxSta(), kills: 0, lost: [], broken: false, round: 0, champKilled: false, line: 0, opened: false,
-    intent: "thrust", read: true, prompt: null, prompts: 0, swing: null, flash: "" };
+    intent: "thrust", read: true, shown: "thrust", feint: false, seen: false, prompt: null, prompts: 0, swing: null, flash: "" };
   newIntent();
   G.phase = "battle";
   say(`The shield-wall forms at ${c.place}. ${c.foeCount} enemies face you.`, "head");
@@ -46,6 +73,7 @@ export function mods(a: Action, it: IntentId | null) {
   if (it === "thrust") { if (a === "strike") { o.my += 15; o.foe -= 15; } if (a === "guard") o.foe += 18; }
   if (it === "hook") { if (a === "guard") o.foe += 20; if (a === "bash") o.noAttack = true; }
   if (it === "shove") o.noAttack = true;
+  if (it === "charge") { if (a === "guard") o.noAttack = true; else o.foe += 10; }
   return o;
 }
 /** Your chance to hit. With useIntent, it includes what you can read of his next move. */
@@ -55,7 +83,8 @@ export function hitP(a: Action, useIntent = false): number {
   if (a === "heavy") p -= 12;
   if (a === "berserk") p += 10;
   if (a === "bash") p += 10;
-  if (useIntent && B.read) p += mods(a, B.intent).my;
+  const seen = useIntent ? visibleIntent().id : null;
+  if (seen) p += mods(a, seen).my;
   return cl(p, 10, 95);
 }
 export function dmgRange(a: Action): [number, number] {
@@ -73,7 +102,8 @@ export function foeP(a: Action, useIntent = false): number {
   if (a === "guard") p -= 28;
   if (a === "rally") p += 12;
   if (a === "berserk") p += 8;
-  if (useIntent && B.read) p += mods(a, B.intent).foe;
+  const seen = useIntent ? visibleIntent().id : null;
+  if (seen) p += mods(a, seen).foe;
   return cl(p, 5, 92);
 }
 export const withdrawP = () => (b().broken ? 90 : cl(40 + eSkl() * 3, 10, 80));
@@ -147,12 +177,16 @@ function checkLines(): boolean {
 export function resolve(a: Action, q: Quality): void {
   const G = g(), B = b(), f = B.foes[B.i], it = B.intent, m: string[] = [], o = mods(a, it);
   B.round++; B.sta -= COST[a]; B.flash = "";
+  // A feint you fell for: say what he really did, so you learn to watch for it.
+  const fooled = B.read && B.feint && !B.seen;
+  if (fooled) m.push(`It was a feint: ${INTENTS[it].reveal}.`);
   if (a === "flee") {
     if (pct(withdrawP())) return withdraw();
     m.push("You try to back out of the line, but the press of bodies holds you.");
   } else if (a === "guard") {
     B.sta = Math.min(maxSta(), B.sta + 3);
     if (it === "overhead") { B.opened = true; B.flash = "Blocked! He is open."; m.push("His overhead blow thuds into your raised shield and leaves him wide open."); }
+    else if (it === "charge") { B.opened = true; B.line++; B.flash = "Braced! He is open."; m.push("His horse shies from your braced shields, and he is left open as it wheels."); }
     else if (it === "hook") m.push("He hooks your raised shield and drags it down.");
     else m.push("You lock shields with your neighbours and get your breath back.");
   } else if (a === "rally") {
@@ -193,12 +227,14 @@ export function resolve(a: Action, q: Quality): void {
   }
   if (!killed && !o.noAttack) {
     if (pct(cl(foeP(a) + o.foe, 5, 95))) {
-      const d = Math.max(1, f.atk + (it === "overhead" ? 2 : 0) + R(3) - Math.floor(ARMOUR[G.ar][1] / 2) + (a === "berserk" ? 2 : 0) - (a === "guard" ? 1 : 0));
+      const d = Math.max(1, f.atk + (it === "overhead" ? 2 : it === "charge" ? 4 : 0) + R(3) - Math.floor(ARMOUR[G.ar][1] / 2) + (a === "berserk" ? 2 : 0) - (a === "guard" ? 1 : 0));
       G.hp -= d;
       m.push(`The ${f.n} wounds you for ${d}.`);
+      if (it === "charge") { B.line--; m.push("The wall bends under his charge."); }
       if (G.hp > 0 && ((d >= 5 && pct(30)) || pct(4))) addWound();
     } else m.push("You turn his blow.");
   }
+  if (fooled && !B.flash) B.flash = "A feint!";
   wallRound(a, m);
   say(m.join(" "));
   if (fix() || checkLines()) return;

@@ -39,7 +39,7 @@ export const ENDINGS: Record<EndingId, Ending> = {
     d: () => isLate()
       ? "You stay in York and take a farm in the Danelaw, where your name is known in every hall."
       : "You make for York, where Danes now hold the land, and claim a farm of your own.",
-    bonus: () => 20 + g().rank * 7 + Math.floor(g().kills / 4) + (isLate() ? 10 : 0),
+    bonus: () => 24 + g().rank * 7 + Math.floor(g().kills / 4) + (isLate() ? 10 : 0),
   },
   north: { d: () => "You follow Halfdan north and take a farm by the river. Your raiding days are over.", bonus: () => 20 + g().rank * 5 },
   desert: { d: () => "You vanish into the fens with the deserters. Nobody sings about it.", bonus: () => 0 },

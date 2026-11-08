@@ -1,13 +1,13 @@
 /* All screens. render() rebuilds the page from state after every action. */
 import type { Action, EndingId, Stat } from "../types";
-import { ARMOUR, CH, EDINGTON, EVENT_BY_ID, GIFT, GODS, HIRE, INTENTS, PERKS, RANKS, TRAINING, WEAPONS, WOUNDS } from "../content/tables";
+import { ARMOUR, CH, EDINGTON, EVENT_BY_ID, FOE_KINDS, GIFT, GODS, HIRE, INTENTS, PERKS, RANKS, TRAINING, WEAPONS, WOUNDS } from "../content/tables";
 import { KEYS, store } from "../save/storage";
 import type { Game } from "../types";
 import { age, b, cap, eSkl, eStr, exposed, g, maxhp, maxSta, saveRun, st } from "../core/state";
 import { cl } from "../core/random";
 import { eventText, optionEnabled, optionOdds } from "../core/events";
 import { hireSide, smithItems, trainP } from "../core/camp";
-import { dmgRange, foeP, hitP, mods, PROMPTS, skimP, withdrawP } from "../core/combat";
+import { dmgRange, foeP, hitP, mods, PROMPTS, skimP, visibleIntent, withdrawP } from "../core/combat";
 import { CHOSEN_ENDINGS, ENDINGS, fordBonus } from "../core/endings";
 import { bar, btn, esc, logItems, shieldEl } from "./html";
 import { sceneSVG } from "./scenes";
@@ -153,15 +153,19 @@ function pushView(): string {
 function battleView(): string {
   const G = g(), B = b(), f = B.foes[B.i];
   let h = chapterHead(true);
-  h += tip("battle2", `<b>Battle.</b> Watch what your enemy is about to do and answer it: block an overhead blow, strike first against a thrust, bash a hook or a shove. Attacks are timed: ${isPhone() ? "tap the moving bar" : "press"} when the red line is in the green mark, or in the bright centre for a perfect blow. Kills, bashes and war-cries push their wall back; lose ground and yours breaks.${isPhone() ? "" : " Number keys 1 to 7 pick actions, and Space swings."}`);
+  h += tip("battle3", `<b>Battle.</b> Watch what your enemy is about to do and answer it: block an overhead blow or a horseman’s charge, strike first against a thrust, bash a hook or a shove. Seasoned warriors sometimes show you a false move; a sharp eye (skill) sees through the feint. Attacks are timed: ${isPhone() ? "tap the moving bar" : "press"} when the red line is in the green mark, or in the bright centre for a perfect blow. Kills, bashes and war-cries push their wall back; lose ground and yours breaks.${isPhone() ? "" : " Number keys 1 to 7 pick actions, and Space swings."}`);
   h += recentView();
-  const remaining = B.foes.length - B.i - 1, I = INTENTS[B.intent], novice = st.L.fought < 3;
+  const remaining = B.foes.length - B.i - 1, novice = st.L.fought < 3;
+  // Only what the raider can tell: the move he shows, or the real one behind a feint you saw through.
+  const v = visibleIntent(), I = v.id ? INTENTS[v.id] : null;
+  const kind = FOE_KINDS[f.kind ?? (f.champ ? "elite" : "levy")];
   h += `<section class="foe" aria-label="Your enemy"><div class="foe-top"><h3>${cap(f.n)}${f.champ ? ' <span class="chip bad">champion</span>' : ""}</h3><span class="muted">${remaining ? `${remaining} more behind him` : "the last one"}</span></div>
+    <p class="muted foe-kind">${kind.note}</p>
     ${bar("His health", Math.max(0, f.hp), f.mx, "hp")}
-    ${B.read ? `<div class="intent"><b>${I.t}</b><span>${I.d}</span>${novice ? `<span class="hint">${I.hint}</span>` : ""}</div>` : `<div class="intent"><b>You can’t read his next move.</b><span class="hint">A better skill helps you read your enemy.</span></div>`}
+    ${I ? `<div class="intent"><b>${I.t}</b><span>${I.d}</span>${v.feintSeen ? `<span class="hint seen">He shapes for ${INTENTS[v.shown!].as}, but you see through the feint.</span>` : ""}${novice ? `<span class="hint">${I.hint}</span>` : ""}</div>` : `<div class="intent"><b>You can’t read his next move.</b><span class="hint">A better skill helps you read your enemy.</span></div>`}
     ${B.opened ? '<p class="good">He is off balance: +20% to hit with your next attack.</p>' : ""}
     ${pushView()}</section>`;
-  if (B.flash) h += `<p class="flash ${B.flash.startsWith("Badly") ? "bad" : "good"}" aria-hidden="true">${B.flash}</p>`;
+  if (B.flash) h += `<p class="flash ${B.flash.startsWith("Badly") || B.flash.startsWith("A feint") ? "bad" : "good"}" aria-hidden="true">${B.flash}</p>`;
   // On a phone the controls come before the shield-wall, so they stay within reach.
   const wall = wallView();
   const place = (controls: string) => (isPhone() ? h + controls + wall : h + wall + controls);
@@ -176,8 +180,8 @@ function battleView(): string {
       <div class="actions">${btn("Swing now", "release", [], { cls: "go", key: "Space", press: true })}</div></section>`);
   }
   const [a1, b1] = dmgRange("strike"), [a2, b2] = dmgRange("heavy"), [a3, b3] = dmgRange("berserk"), [a4, b4] = dmgRange("bash");
-  const best = (a: Action) => (novice && B.read && I.counter === a ? "best" : "");
-  const foeN = (a: Action) => (B.read && mods(a, B.intent).noAttack ? "he won’t land a blow" : `he hits ${foeP(a, true)}%`);
+  const best = (a: Action) => (novice && I && I.counter === a ? "best" : "");
+  const foeN = (a: Action) => (v.id && mods(a, v.id).noAttack ? "he won’t land a blow" : `he hits ${foeP(a, true)}%`);
   return place(`<div class="actions grid2" id="battle-actions">
     ${btn("Strike", "turn", ["strike"], { key: 1, cls: best("strike"), odds: hitP("strike", true), dis: B.sta < 1, note: `1 stamina, ${a1}–${b1} damage, ${foeN("strike")}` })}
     ${btn("Heavy blow", "turn", ["heavy"], { key: 2, cls: best("heavy"), odds: hitP("heavy", true), dis: B.sta < 2, note: `2 stamina, ${a2}–${b2} damage, ${foeN("heavy")}` })}

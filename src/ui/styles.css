@@ -207,3 +207,7 @@ body.phone::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area
 .phone .foe{padding:12px 14px;gap:8px}
 .phone .foe h3{font-size:1.1rem}
 .phone .swing,.phone #battle-actions,.phone main section.event{scroll-margin-top:110px;scroll-margin-bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+
+/* ---------- enemy kinds and feints ---------- */
+.foe-kind{font-size:.9rem;margin-top:-4px}
+.intent .hint.seen{color:var(--good);font-weight:600}
