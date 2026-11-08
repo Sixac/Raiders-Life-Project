@@ -1,6 +1,6 @@
 /* The single mutable game state, plus the helpers everything else derives from it. */
 import type { Battle, Crew, Game, Hunt, Legacy, LogClass, WoundId } from "../types";
-import { CH, FATHERS, NAMES } from "../content/tables";
+import { CH, ENEMIES, FATHERS, NAMES } from "../content/tables";
 import { KEYS, SAVE_VERSION, store } from "../save/storage";
 import { cl, pick } from "./random";
 
@@ -42,8 +42,8 @@ export const maxhp = () => 18 + g().end * 2 - (hasWound("gash") ? 5 : 0);
 export const maxSta = () => 8 - (hasWound("ribs") ? 2 : 0);
 export const chapter = () => CH[Math.min(g().ch, CH.length - 1)];
 export const age = () => 18 + chapter().year - 865;
-/** Enemy strength stops climbing after chapter 10. */
-export const tier = () => Math.min(g().ch, 10);
+/** How strong enemies are, and how rich the rewards: grows each chapter up to ENEMIES.tierCap. */
+export const tier = () => Math.min(g().ch, ENEMIES.tierCap);
 /** Odds of a stat check, as a percentage. */
 export const ck = (s: number, d = 0) => cl(30 + s * 8 - d * 8, 5, 95);
 export const crewAll = (): Crew[] => [...g().crew.L, ...g().crew.R];

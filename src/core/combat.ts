@@ -1,6 +1,6 @@
 /* The shield-wall battle: enemy moves, timed swings, the push of the walls, mid-fight choices, loot. */
 import type { Action, Foe, IntentId, Quality, Swing } from "../types";
-import { ARMOUR, ATTACKS, CH, COST, INTENTS, RANKS } from "../content/tables";
+import { ARMOUR, ATTACKS, CH, COST, ENEMIES, INTENTS, JARL_GIFT, LOOT, RANKS, SWING } from "../content/tables";
 import { cl, pct, pick, R, roll } from "./random";
 import { b, ck, crewAll, eSkl, eStr, exposed, g, hurt, keepLegacy, maxSta, say, st, tier } from "./state";
 import { addWound, fix, promote, refillCrew } from "./life";
@@ -69,7 +69,7 @@ export function dmgRange(a: Action): [number, number] {
 /** His chance to hit you. */
 export function foeP(a: Action, useIntent = false): number {
   const G = g(), B = b(), f = B.foes[B.i];
-  let p = 40 + tier() * 2 + (f.champ ? 6 : 0) - ARMOUR[G.ar][1] * 5 + exposed() * 10 + (B.broken ? 10 : 0) + (G.mor < 25 ? 8 : 0);
+  let p = ENEMIES.hitBase + tier() * 2 + (f.champ ? 6 : 0) - ARMOUR[G.ar][1] * 5 + exposed() * 10 + (B.broken ? 10 : 0) + (G.mor < 25 ? 8 : 0);
   if (a === "guard") p -= 28;
   if (a === "rally") p += 12;
   if (a === "berserk") p += 8;
@@ -162,12 +162,12 @@ export function resolve(a: Action, q: Quality): void {
     if (pct(50)) { B.line++; m.push("The wall takes a step forward."); }
   } else {
     if (a === "berserk") G.mor -= 20;
-    const p = hitP(a) + o.my + (q === "perfect" ? 20 : q === "poor" ? -25 : 0);
+    const p = hitP(a) + o.my + SWING[q ?? "good"].hit;
     B.opened = false;
     if (pct(cl(p, 5, 98))) {
       const [lo, hi] = dmgRange(a);
       let d = lo + R(hi - lo + 1);
-      if (q === "perfect") { d = Math.ceil(d * 1.5); B.flash = "A perfect blow!"; }
+      if (q === "perfect") { d = Math.ceil(d * SWING.perfect.dmg); B.flash = "A perfect blow!"; }
       f.hp -= d;
       const verb = ({ strike: "You hit", heavy: "Your heavy blow lands on", berserk: "In a red rage you hack at", bash: "Your shield boss smashes into" } as Record<string, string>)[a];
       m.push(`${verb} the ${f.n} for ${d}${q === "perfect" ? ", a perfect blow" : ""}.`);
@@ -294,7 +294,6 @@ function victory(rout: boolean): void {
   const G = g(), B = b(), L = st.L;
   const champ = B.champKilled, held = B.lost.length === 0;
   L.fought++; keepLegacy();
-  G.last = { kills: B.kills, champ, held };
   const rep = 2 + tier() + (held ? 2 : 0) + (rout ? 3 : 0);
   G.rep += rep; G.mor += 10;
   let msg = rout ? `You broke their line. Reputation +${rep}, morale +10.` : `Your last foe falls. Reputation +${rep}${held ? " (the wall held without loss)" : ""}, morale +10.`;
@@ -314,7 +313,9 @@ function victory(rout: boolean): void {
     G.phase = "finale";
     return;
   }
-  G.loot = Math.round((6 + tier() * 3) * RANKS[G.rank].share) + (champ ? 4 : 0) + (rout ? 3 : 0);
+  G.loot = Math.round((LOOT.base + tier() * LOOT.perTier) * RANKS[G.rank].share) + (champ ? LOOT.champion : 0) + (rout ? LOOT.rout : 0);
+  // The jarl rewards what you did yourself; he gives nothing to a níðingr.
+  G.gift = G.nid ? 0 : B.kills * JARL_GIFT.perKill + (champ ? JARL_GIFT.champion : 0) + (held ? JARL_GIFT.wallHeld : 0) + G.rank * JARL_GIFT.perRank;
   G.phase = "aftermath";
 }
 
@@ -324,7 +325,6 @@ function withdraw(): void {
   else if (G.nid) { st.B = null; die("outlaw"); return; }
   else { G.nid = true; G.rep -= 6; G.mor -= 15; say("You leave your place in the wall. Men will call you níðingr until you stand fast again. Reputation −6, morale −15.", "bad"); }
   if (G.f.oath) { G.rep -= 4; delete G.f.oath; say("Your Yule oath is broken. Reputation −4.", "bad"); }
-  G.last = { kills: B.kills, champ: false, held: false };
   st.B = null;
   refillCrew();
   if (isFinale(G.ch)) { G.phase = "finale"; return; }
@@ -334,11 +334,12 @@ function withdraw(): void {
 export function loot(k: "take" | "skim"): void {
   const G = g();
   if (G.phase !== "aftermath") return;
-  const share = G.loot ?? 0;
-  if (k === "take") { G.silver += share; say(`You take your share. Silver +${share}.`); }
-  else if (pct(skimP())) { G.silver += share * 2; say(`You slip extra hacksilver into your boot. Silver +${share * 2}.`); }
-  else { G.rep -= 8; hurt(3); say("You are caught with your hand in the hoard and flogged before the crew. Reputation −8, health −3.", "bad"); }
-  G.loot = 0;
+  const share = G.loot ?? 0, gift = G.gift ?? 0;
+  const rings = gift ? ` and the jarl’s arm-rings worth ${gift}` : "";
+  if (k === "take") { G.silver += share + gift; say(`You take your share of ${share} silver${rings}. Silver +${share + gift}.`); }
+  else if (pct(skimP())) { G.silver += share * 2 + gift; say(`You slip extra hacksilver into your boot${rings ? `, and take the jarl’s arm-rings worth ${gift}` : ""}. Silver +${share * 2 + gift}.`); }
+  else { G.rep -= 8; hurt(3); say("You are caught with your hand in the hoard and flogged before the crew. The jarl takes back his gift. Reputation −8, health −3.", "bad"); }
+  G.loot = 0; G.gift = 0;
   if (fix()) return;
   advance();
 }

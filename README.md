@@ -17,7 +17,7 @@ You need [Node.js](https://nodejs.org) 22.12 or newer.
 ```sh
 npm install
 npm run dev        # play at http://localhost:5173 with live reload
-npm test           # check the content files and simulate 3,000 runs
+npm test           # check the content files and simulate 7,500 runs
 npm run build      # build dist/index.html, one self-contained file
 ```
 
@@ -30,7 +30,7 @@ src/
   content/
     chapters.json   the 16 chapters: year, place, text, enemies, map position, scene
     events.json     the camp events and their choices
-    tables.ts       tuning tables: ranks, gear, wounds, gods, legacy perks, enemy moves
+    tables.ts       tuning tables: ranks, gear, training, enemies, loot, prices, wounds, gods, perks, enemy moves
   core/             the rules, with no browser code (so tests can run them)
     state.ts        the game state and values derived from it
     camp.ts         new runs, camp actions, hunting, moving between chapters
@@ -49,7 +49,8 @@ src/
   main.ts           browser entry point
 tests/
   content.test.ts   catches mistakes in the JSON files
-  simulate.test.ts  plays thousands of runs with two bots and checks balance
+  simulate.test.ts  plays thousands of runs with bots and checks the balance
+  sim.ts            the bot and the balance report
 ```
 
 ## Writing events
@@ -105,7 +106,11 @@ Run `npm test` after editing. The content test names the event and field if some
 
 ## Tuning the balance
 
-Numbers for combat live in `src/core/combat.ts` (hit chances, damage, enemy strength) and `src/content/tables.ts` (gear, ranks). `npm run balance` prints how far a careful bot and a careless bot get. The test fails if a careful player rarely survives to 900, or a careless one often does, so it warns you when a change tips the game too far.
+Most of the numbers you would want to change are in `src/content/tables.ts`: ranks and promotion thresholds, gear prices, training, enemy strength, the bonus for perfectly timed swings, loot and the jarl's gift, and the prices of gifts and hired spearmen. Hit chance and damage formulas are in `src/core/combat.ts`, and the ending bonuses in `src/core/endings.ts`.
+
+`npm run balance` plays 7,500 runs with bots and prints a report for each kind of player: careful players (who answer the enemy's moves) with poor, average and skilled timing or timing turned off, and careless players. For each it shows how many survive to 900, where the rest die, when each rank is first reached, silver and reputation at the end, and which ending would score best.
+
+The test fails when a change tips the game too far, for example if a careful player with average timing survives to 900 less than 15% or more than 45% of the time, if timing decides too much, if the top ranks come before Edington, or if one ending is best for nearly everyone. The limits are in `tests/simulate.test.ts`; the bot is in `tests/sim.ts`.
 
 ## Saves
 

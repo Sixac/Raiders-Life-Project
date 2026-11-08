@@ -9,6 +9,11 @@ import { advance } from "./camp";
 const isLate = () => g().ch > EDINGTON;
 
 export interface Ending { l?: string; d: () => string; bonus: () => number }
+/*
+ * The three endings you choose reward different lives: baptism rewards reputation, sailing home
+ * rewards silver, and land at York rewards rank and kills. They are tuned to be worth about the
+ * same for a typical raider, so the choice depends on how you played. `npm run balance` checks it.
+ */
 export const ENDINGS: Record<EndingId, Ending> = {
   baptism: {
     l: "Kneel at the font",
@@ -20,21 +25,21 @@ export const ENDINGS: Record<EndingId, Ending> = {
         + (G.f.promise ? " Eadgyth stands beside you, as you promised." : "")
         + (G.f.son ? " Your son learns to plough rather than row." : "");
     },
-    bonus: () => 25 + Math.floor(Math.max(0, g().rep) / 2) + (g().f.promise ? 15 : 0),
+    bonus: () => 24 + Math.floor(Math.max(0, g().rep) / 5) + (g().f.promise ? 15 : 0),
   },
   sail: {
     l: "Sail home with your silver",
     d: () => isLate()
       ? `After ${age() - 18} years of war you buy passage north. The whale-road carries you home with your silver.`
       : "You buy passage on a ship bound for the north. The whale-road carries you home with your silver.",
-    bonus: () => 15 + Math.floor(g().silver / 2),
+    bonus: () => 15 + Math.floor(g().silver / 5),
   },
   danelaw: {
     l: "Take land at York",
     d: () => isLate()
       ? "You stay in York and take a farm in the Danelaw, where your name is known in every hall."
       : "You make for York, where Danes now hold the land, and claim a farm of your own.",
-    bonus: () => 20 + g().rank * 8 + (isLate() ? 10 : 0),
+    bonus: () => 20 + g().rank * 7 + Math.floor(g().kills / 4) + (isLate() ? 10 : 0),
   },
   north: { d: () => "You follow Halfdan north and take a farm by the river. Your raiding days are over.", bonus: () => 20 + g().rank * 5 },
   desert: { d: () => "You vanish into the fens with the deserters. Nobody sings about it.", bonus: () => 0 },
@@ -58,7 +63,7 @@ function verse(k: EndingId): string[] | null {
   const place = CH[Math.min(G.ch, CH.length - 1)].place;
   const kenning = pick(["Feeder of ravens", "Reddener of blades", "Oak of the shield-wall", "Rider of the sail-steed", "Giver of the wolf’s meal"]);
   const l2 = G.ch >= 10 ? "fought from Ashdown’s thorn to the walls of Paris" : G.kills >= 12 ? `gave the eagle its fill at ${place}` : `stood in the wall where ${place} ran red`;
-  const l3 = ["kept his oar and kept his word", "rose from the bench to stand before the jarl", "won rings from the jarl’s own hand", "took the steering-oar of his own ship"][G.rank];
+  const l3 = ["kept his oar and kept his word", "rose from the bench to stand before the jarl", "won rings from the jarl’s own hand", "took the steering-oar of his own ship", "led a war-band of his own under the raven banner"][G.rank];
   const l4 = ({ baptism: "and knelt at last in the White Christ’s water.", sail: "and the whale-road carried him home.", danelaw: "and York gave him ploughland.", north: "and found his peace in Northumbria’s fields.", death: "and Odin has him now in the high hall." } as Record<string, string>)[k];
   return [`${kenning}, ${first},`, l2 + ";", l3 + ",", l4];
 }
