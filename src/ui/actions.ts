@@ -1,11 +1,14 @@
 /* Every button runs one of these by name (see btn() in html.ts). The page re-renders after each. */
 import type { Game, Battle, PerkId } from "../types";
 import { KEYS, SAVE_VERSION, store } from "../save/storage";
-import { keepLegacy, st } from "../core/state";
+import { keepLegacy, loadLegacy, st } from "../core/state";
 import { act, loose, newGame } from "../core/camp";
 import { choose } from "../core/events";
 import { answer, loot, march, release, turn } from "../core/combat";
 import { crossSea, ending } from "../core/endings";
+import { decodeSave, encodeSave, SaveCodeError, type SaveBundle } from "../core/savecode";
+import { sagaSummary } from "../core/summary";
+import { canonicalUrl, canShareSheet, copyText } from "./share";
 import { freshUiName, ui, type Tab } from "./ui-state";
 import { LAYOUTS } from "./layout";
 import { render } from "./render";
@@ -20,7 +23,7 @@ export function loadRun(s: SavedRun): void {
   if (st.G.phase === "hunt") { st.G.phase = "camp"; st.G.acts++; }
 }
 
-const ACTIONS: Record<string, (...args: never[]) => void> = {
+const ACTIONS: Record<string, (...args: never[]) => unknown> = {
   act, choose, march, turn, answer, release, loot, ending, crossSea, loose,
   sub: (s: string | null) => { ui.sub = s; },
   dismiss: (k: string) => { st.L.seen[k] = true; keepLegacy(); },
@@ -29,25 +32,66 @@ const ACTIONS: Record<string, (...args: never[]) => void> = {
   tab: (t: Tab) => { ui.tab = t; window.scrollTo(0, 0); },
   up: (k: PerkId) => { const L = st.L; if (L.pts < 3 || L.up[k] >= 3) return; L.pts -= 3; L.up[k]++; keepLegacy(); },
   reroll: () => { freshUiName(); },
-  continueRun: () => { const s = store.load<SavedRun>(KEYS.run); if (s?.G) { loadRun(s); ui.tab = "saga"; ui.recent = 0; } },
+  continueRun: () => { const s = store.load<SavedRun>(KEYS.run); if (s?.G) { loadRun(s); Object.assign(ui, { tab: "saga", recent: 0, saveMsg: "" }); } },
   begin: () => {
     const saved = store.load<SavedRun>(KEYS.run);
     if (saved?.G && saved.G.phase !== "over" && !ui.confirmNew) { ui.confirmNew = true; return; }
     ui.confirmNew = false;
-    ui.tab = "saga";
+    Object.assign(ui, { tab: "saga", saveMsg: "", shareMsg: "", shareText: "" });
     newGame(ui.name);
+  },
+  copySave: () => {
+    const saved = store.load<SavedRun>(KEYS.run);
+    const bundle: SaveBundle = { legacy: st.L, run: saved?.G ? { v: saved.v ?? SAVE_VERSION, G: saved.G, B: saved.B ?? null } : null };
+    const code = encodeSave(bundle);
+    Object.assign(ui, { saveMsg: "", saveCode: "" });
+    return copyText(code).then(async (ok) => {
+      if (ok) ui.saveMsg = "Save code copied. Keep it somewhere safe, such as a note or an email to yourself.";
+      else ui.saveCode = await code;
+    });
+  },
+  toggleImport: () => { Object.assign(ui, { importOpen: !ui.importOpen, importError: "", pendingImport: null, saveMsg: "" }); },
+  loadSave: () => decodeSave(ui.importText).then(
+    (bundle) => { Object.assign(ui, { pendingImport: bundle, importError: "" }); },
+    (e) => { Object.assign(ui, { pendingImport: null, importError: e instanceof SaveCodeError ? e.message : "That save code could not be read." }); },
+  ),
+  confirmImport: () => {
+    const bundle = ui.pendingImport;
+    if (!bundle) return;
+    store.save(KEYS.legacy, bundle.legacy);
+    if (bundle.run) store.save(KEYS.run, bundle.run); else store.remove(KEYS.run);
+    loadLegacy();
+    Object.assign(ui, { pendingImport: null, importOpen: false, importText: "", confirmNew: false, saveMsg: "Save loaded." });
+  },
+  cancelImport: () => { ui.pendingImport = null; },
+  shareSaga: () => {
+    const G = st.G;
+    if (!G?.res) return;
+    const text = sagaSummary(G), url = canonicalUrl(), full = `${text}\nA Raider’s Life: ${url}`;
+    Object.assign(ui, { shareMsg: "", shareText: "" });
+    if (canShareSheet()) {
+      return navigator.share({ title: "A Raider’s Life", text, url })
+        .catch((e: Error) => { if (e?.name !== "AbortError") ui.shareText = full; });
+    }
+    return copyText(Promise.resolve(full)).then((ok) => {
+      if (ok) ui.shareMsg = "Your saga is copied. Paste it wherever you like.";
+      else ui.shareText = full;
+    });
   },
   toMenu: () => {
     if (st.G && st.G.phase !== "over") store.save(KEYS.run, { v: SAVE_VERSION, G: st.G, B: st.B ? { ...st.B, swing: null } : null });
     st.G = null; st.B = null; st.H = null;
+    Object.assign(ui, { shareMsg: "", shareText: "" });
   },
 };
 
 export function run(name: string, args: unknown[] = []): void {
-  const fn = ACTIONS[name] as ((...a: unknown[]) => void) | undefined;
+  const fn = ACTIONS[name] as ((...a: unknown[]) => unknown) | undefined;
   if (!fn) return;
   const actsBefore = st.G?.acts;
-  fn(...args);
+  const result = fn(...args);
+  // Copying, sharing and save codes finish a moment later; draw again when they do.
+  if (result instanceof Promise) result.finally(render);
   // Close a camp sub-menu once an action has been used up, or on anything other than a tip.
   if (name === "act" ? st.G?.acts !== actsBefore : !["sub", "dismiss", "tab", "cycleLayout", "toggleTiming"].includes(name)) ui.sub = null;
   render();
@@ -73,6 +117,7 @@ export function bindInput(): void {
   document.addEventListener("input", (e) => {
     const t = e.target as HTMLInputElement;
     if (t.id === "nm") ui.name = t.value;
+    if (t.id === "importCode") ui.importText = t.value;
   });
   document.addEventListener("keydown", (e) => {
     const G = st.G;

@@ -15,6 +15,7 @@ import { ui } from "./ui-state";
 import { syncMotion } from "./motion";
 import { isPhone, LAYOUT_NAMES, LAYOUT_NOTES } from "./layout";
 import type { Tab } from "./ui-state";
+import { canInstall, isInstalled } from "./offline";
 
 const withArticle = (w: string) => (/^[aeiou]/i.test(w) ? "an " : "a ") + w;
 
@@ -227,9 +228,29 @@ function overView(): string {
       <tr><td>Ending</td><td>${r.bonus}</td></tr>
       <tr class="total"><td>Total</td><td>${r.total}</td></tr></table>
       <p>That earns ${r.pts} legacy point${r.pts === 1 ? "" : "s"} for your next raider. You now have ${L.pts}.</p></section>
-    <div class="actions">${btn("Spend legacy and begin again", "toMenu", [], { cls: "go" })}</div>
+    <div class="actions">${btn("Spend legacy and begin again", "toMenu", [], { cls: "go" })}${btn("Share your saga", "shareSaga", [], { note: "a line about your raider, with a link to the game" })}</div>
+    ${ui.shareMsg ? `<p class="good" role="status">${ui.shareMsg}</p>` : ""}
+    ${ui.shareText ? `<div class="field"><label for="shareOut">Copying isn’t allowed here. Select this text and copy it yourself:</label><textarea id="shareOut" class="code" rows="3" readonly>${esc(ui.shareText)}</textarea></div>` : ""}
     ${logView()}
   </div>`;
+}
+
+/** Title screen: backing up and moving saves, and installing on a phone. */
+function savesPanel(): string {
+  const install = canInstall() && !isInstalled()
+    ? `<p class="muted">On a phone, add the game to your home screen (in Safari: Share, then Add to Home Screen) to play offline. Saves kept there are also safer from being cleared.</p>` : "";
+  return `<section class="panel" aria-label="Your saves"><h3>Your saves</h3>
+    <p>Your raider and legacy points are saved in this browser only. A save code is a backup you can keep, or paste into another device to carry on there.</p>
+    ${install}
+    <div class="actions">${btn("Copy save code", "copySave")}${btn(ui.importOpen ? "Close" : "Load a save code", "toggleImport")}</div>
+    ${ui.saveMsg ? `<p class="good" role="status">${ui.saveMsg}</p>` : ""}
+    ${ui.saveCode ? `<div class="field"><label for="saveOut">Copying isn’t allowed here. Select the whole code and copy it yourself:</label><textarea id="saveOut" class="code" rows="4" readonly>${esc(ui.saveCode)}</textarea></div>` : ""}
+    ${ui.importOpen ? `<div class="field"><label for="importCode">Paste a save code</label><textarea id="importCode" class="code" rows="4" spellcheck="false" autocomplete="off">${esc(ui.importText)}</textarea></div>
+      <div class="actions">${btn("Load this save", "loadSave")}</div>` : ""}
+    ${ui.importError ? `<p class="bad" role="alert">${ui.importError}</p>` : ""}
+    ${ui.pendingImport ? `<p class="bad">This replaces the legacy points${ui.pendingImport.run ? " and the saga" : ""} saved in this browser${ui.pendingImport.run ? `, with ${esc(ui.pendingImport.run.G.name)} at ${CH[ui.pendingImport.run.G.ch].place} (${CH[ui.pendingImport.run.G.ch].year})` : ""}.</p>
+      <div class="actions">${btn("Replace my save", "confirmImport", [], { cls: "go" })}${btn("Cancel", "cancelImport")}</div>` : ""}
+  </section>`;
 }
 function titleView(): string {
   const L = st.L;
@@ -252,6 +273,7 @@ function titleView(): string {
       ${L.runs ? `<p class="muted">Best saga score ${L.best} across ${L.runs} raider${L.runs === 1 ? "" : "s"}.</p>` : ""}
     </section>
     <section class="panel" aria-label="Settings"><h3>Settings</h3><div class="actions">${settingsButtons()}</div></section>
+    ${savesPanel()}
     <p class="muted">Sixteen chapters, each a camp and a battle. Death is permanent. Choose fights that suit your raider.</p>
   </div>`;
 }

@@ -207,3 +207,7 @@ body.phone::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area
 .phone .foe{padding:12px 14px;gap:8px}
 .phone .foe h3{font-size:1.1rem}
 .phone .swing,.phone #battle-actions,.phone main section.event{scroll-margin-top:110px;scroll-margin-bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+
+/* ---------- save codes and sharing ---------- */
+textarea.code{font:.82rem/1.45 ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid var(--ink);background:var(--bg);color:var(--ink);border-radius:3px;resize:vertical;overflow-wrap:anywhere;word-break:break-all}
+textarea.code:focus-visible{outline:3px solid var(--frost);outline-offset:2px}

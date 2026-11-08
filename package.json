@@ -16,6 +16,8 @@
     "balance": "vitest run tests/simulate.test.ts --reporter=verbose"
   },
   "devDependencies": {
+    "@fontsource/alegreya": "5.3.0",
+    "@fontsource/uncial-antiqua": "5.3.0",
     "typescript": "7.0.2",
     "vite": "8.3.5",
     "vite-plugin-singlefile": "2.3.4",
