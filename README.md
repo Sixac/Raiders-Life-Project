@@ -2,6 +2,8 @@
 
 A permadeath roguelite RPG about one ordinary raider of the Great Heathen Army, from the landing in East Anglia in 865 to a last summer at York in 900. Inspired by *A Legionary’s Life*.
 
+**Play it in your browser at [sixac.github.io/Raiders-Life-Project](https://sixac.github.io/Raiders-Life-Project/).**
+
 Each of the sixteen chapters is a camp (train, feast, rest, hunt, buy gear, make offerings, deal with events) followed by a shield-wall battle (read the enemy’s move, time your blows, push their wall back). Death is permanent; points from finished runs buy starting bonuses for the next raider.
 
 It plays on phones too: below 720 pixels wide it switches to a phone layout with large buttons, a status bar at the top and tabs at the bottom. Players can force either layout under Settings. On the public site it can also be added to a phone’s home screen and played offline.
@@ -86,7 +88,7 @@ Events live in `src/content/events.json`. Add one and it can appear in camp; no 
 | `id` | Unique name. |
 | `chapters` | `[first, last]` chapter it can appear in, counting from 0 (865 is 0, 900 is 15). |
 | `when` | A condition (below) that must hold for the event to appear. |
-| `minRank` | 1 veteran, 2 hirðman, 3 ship’s captain. |
+| `minRank` | 1 veteran, 2 hirðman, 3 ship’s captain, 4 hersir. |
 | `priority` | Shown before any other eligible event, for fixed historical moments. |
 | `repeatable` | Can appear more than once. |
 | `text` | What happens. `{crewFirst}` and `{name}` are filled in. |
@@ -114,7 +116,7 @@ Run `npm test` after editing. The content test names the event and field if some
 
 ## Tuning the balance
 
-Most of the numbers you would want to change are in `src/content/tables.ts`: ranks and promotion thresholds, gear prices, training, enemy strength, the bonus for perfectly timed swings, loot and the jarl's gift, and the prices of gifts and hired spearmen. Hit chance and damage formulas are in `src/core/combat.ts`, and the ending bonuses in `src/core/endings.ts`.
+Most of the numbers you would want to change are in `src/content/tables.ts`: ranks and promotion thresholds, gear prices, training, enemy strength, the bonus for perfectly timed swings, how often each kind of enemy makes each move (`FOE_KINDS`), how often enemies feint and how likely a raider is to see through it (`FEINTS`), loot and the jarl's gift, and the prices of gifts and hired spearmen. The kinds of enemy in each battle are set by `foeKinds` in `src/content/chapters.json`. Hit chance and damage formulas are in `src/core/combat.ts`, and the ending bonuses in `src/core/endings.ts`.
 
 `npm run balance` plays 7,500 runs with bots and prints a report for each kind of player: careful players (who answer the enemy's moves) with poor, average and skilled timing or timing turned off, and careless players. For each it shows how many survive to 900, where the rest die, when each rank is first reached, silver and reputation at the end, and which ending would score best.
 
