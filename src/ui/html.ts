@@ -3,6 +3,13 @@ import { cl } from "../core/random";
 
 export const esc = (s: unknown) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 
+/**
+ * Saga log lines as list items or paragraphs. Log text is plain text and may contain the
+ * player's own name, so it is always escaped: a name like "<b>Ulf</b>" must show as typed.
+ */
+export const logItems = (lines: { t: string; c: string }[], tag: "li" | "p" = "li") =>
+  lines.map((l) => `<${tag} class="${esc(l.c)}">${esc(l.t)}</${tag}>`).join("");
+
 export interface BtnOpts {
   cls?: string; dis?: boolean; odds?: number | null; note?: string; key?: string | number;
   /** Fire on pointer-down instead of click, for timing-sensitive buttons. */
