@@ -1,9 +1,9 @@
 /* A new run, camp actions, the hunting minigame and moving on between chapters. */
 import type { GodId, Stat } from "../types";
-import { ARMOUR, CH, FRANKISH_FROM, GODS, RANKS, WEAPONS, WOUNDS } from "../content/tables";
+import { ARMOUR, CH, FRANKISH_FROM, GIFT, GODS, HIRE, RANKS, TRAINING, WEAPONS, WOUNDS } from "../content/tables";
 import { cl, pct, R } from "./random";
 import { age, eSkl, g, hurt, maxhp, mkCrew, randomName, say, st } from "./state";
-import { addWound, fix } from "./life";
+import { addWound, fix, wallCap } from "./life";
 import { drawEvent } from "./events";
 
 export function newGame(name?: string): void {
@@ -12,7 +12,7 @@ export function newGame(name?: string): void {
   st.G = {
     name: n, ch: 0, str: 3 + L.up.str, skl: 3 + L.up.skl, end: 3 + L.up.end, hp: 0, mor: 60, rep: 0, silver: 6 + L.up.hoard * 8,
     wp: 0, ar: 0, kills: 0, rank: 0, nid: false, wounds: [], eye: false, gods: { odin: 0, thor: 0, freyr: 0 }, f: {}, used: [],
-    log: [], crew: { L: [], R: [] }, phase: "camp", acts: 0, jarl: false, ev: null, mid: false, last: null, lastEv: null,
+    log: [], crew: { L: [], R: [] }, phase: "camp", acts: 0, jarl: false, ev: null, mid: false, lastEv: null,
   };
   const G = st.G;
   G.hp = maxhp();
@@ -44,8 +44,8 @@ function spend(): void {
   fix();
 }
 
-/** Chance that training raises a stat: harder above 6, impossible at 10. */
-export const trainP = (s: Stat) => { const v = g()[s]; return v < 6 ? 100 : v < 8 ? 60 : v < 10 ? 30 : 0; };
+/** Chance that training raises a stat: it gets harder as the stat grows (see TRAINING). */
+export const trainP = (s: Stat) => { const v = g()[s]; return TRAINING.chance.find((c) => v < c.below)?.pct ?? 0; };
 
 export function smithItems() {
   const G = g();
@@ -55,19 +55,28 @@ export function smithItems() {
   ];
 }
 
-export type CampAction = "train" | "feast" | "rest" | "jarl" | "offer" | "drill" | "forage" | "buy";
+export type CampAction = "train" | "feast" | "rest" | "gift" | "hire" | "offer" | "drill" | "forage" | "buy";
+
+/** The side of the wall a new man joins: the shorter one, or null if both are full. */
+export function hireSide(): "L" | "R" | null {
+  const G = g(), side = G.crew.L.length <= G.crew.R.length ? "L" : "R";
+  return G.crew[side].length < wallCap() ? side : null;
+}
 const STAT_NAMES: Record<Stat, string> = { str: "Strength", skl: "Skill", end: "Endurance" };
+
+/** Purchases made in passing: they cost silver but no camp action, so they never compete with training. */
+export const QUICK: CampAction[] = ["gift", "hire"];
 
 export function act(k: CampAction, x?: string): void {
   const G = g();
-  if (G.phase !== "camp" || G.ev || G.acts < 1) return;
+  if (G.phase !== "camp" || G.ev || (G.acts < 1 && !QUICK.includes(k))) return;
   switch (k) {
     case "train": {
       const s = x as Stat;
       if (G.mor < 30) { say("You are too downhearted to train. Raise your morale first."); return; }
-      G.mor -= 8;
-      if (pct(trainP(s))) { G[s]++; if (s === "end") G.hp += 2; say(`You drill until your arms shake. ${STAT_NAMES[s]} +1, morale −8.`); }
-      else say(`You drill hard but learn nothing new. ${STAT_NAMES[s]} is near its limit. Morale −8.`);
+      G.mor -= TRAINING.morale;
+      if (pct(trainP(s))) { G[s]++; if (s === "end") G.hp += 2; say(`You drill until your arms shake. ${STAT_NAMES[s]} +1, morale −${TRAINING.morale}.`); }
+      else say(`You drill hard but learn nothing new. ${STAT_NAMES[s]} is near its limit. Morale −${TRAINING.morale}.`);
       return spend();
     }
     case "feast":
@@ -87,16 +96,20 @@ export function act(k: CampAction, x?: string): void {
       say(s);
       return spend();
     }
-    case "jarl": {
-      if (G.jarl) return;
-      G.jarl = true;
-      if (G.nid) { G.mor -= 5; say("The jarl turns his back on a níðingr. Morale −5.", "bad"); return spend(); }
-      if (!G.last) { G.rep += 1; say("The jarl looks you over and remembers your face. Reputation +1."); return spend(); }
-      const s = 1 + G.last.kills * 2 + (G.last.champ ? 4 : 0) + G.rank * 2 + (G.last.held ? 2 : 0);
-      const r = 1 + (G.last.champ ? 2 : 0);
-      G.silver += s; G.rep += r;
-      say(`The jarl rewards your part in the last fight with arm-rings. Silver +${s}, reputation +${r}.`);
-      return spend();
+    case "gift":
+      // G.jarl marks that the jarl has had a gift from you this camp.
+      if (G.jarl || G.nid || G.silver < GIFT.price) return;
+      G.jarl = true; G.silver -= GIFT.price; G.rep += GIFT.rep;
+      say(`You bring the jarl a silver cup, and he drinks to your name before the hall. Reputation +${GIFT.rep}, silver −${GIFT.price}.`);
+      return;
+    case "hire": {
+      const side = hireSide();
+      if (G.rank < 1 || G.silver < HIRE.price || !side) return;
+      G.silver -= HIRE.price;
+      const c = mkCrew(undefined, HIRE.hp);
+      G.crew[side].push(c);
+      say(`${c.n}, a free Dane with his own shield, joins your part of the wall for a share of the loot. Silver −${HIRE.price}.`);
+      return;
     }
     case "offer": {
       const god = x as GodId;

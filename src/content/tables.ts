@@ -14,13 +14,47 @@ export const EDINGTON = 7;
 export const NAMES = ["Ketil", "Ulf", "Asbjorn", "Thorgrim", "Orm", "Skeggi", "Bersi", "Gunnar", "Kolbein", "Hrolf", "Vigfus", "Eyvind", "Sigtrygg", "Thorstein", "Grim", "Ragnvald", "Bjarni", "Steinar", "Arnor", "Kari", "Toki", "Svein", "Halldor", "Einar", "Ari", "Leif", "Odd", "Snorri"];
 export const FATHERS = ["Ketils", "Ulfs", "Asbjarnar", "Thorgrims", "Orms", "Gunnars", "Kolbeins", "Hrolfs", "Eyvindar", "Steinars", "Grims", "Bjarnar", "Halldors", "Einars", "Toka", "Sveins"];
 
+/**
+ * Ranks, with the reputation and kills needed for each. Spread so promotions keep coming
+ * through the whole campaign: run `npm run balance` to see when players typically reach each.
+ */
 export interface Rank { n: string; rep: number; kills: number; share: number; acts: number; perk: string }
 export const RANKS: Rank[] = [
   { n: "Oarsman", rep: 0, kills: 0, share: 1, acts: 3, perk: "" },
-  { n: "Shield-wall veteran", rep: 10, kills: 3, share: 1.5, acts: 3, perk: "You can drill recruits in camp, and your loot share grows." },
-  { n: "Hirðman", rep: 24, kills: 8, share: 2, acts: 3, perk: "You serve in the jarl’s own retinue. His gifts and your share grow." },
-  { n: "Ship’s captain", rep: 48, kills: 16, share: 3, acts: 4, perk: "You command a ship. One more camp action and the largest share." },
+  { n: "Shield-wall veteran", rep: 12, kills: 4, share: 1.25, acts: 3, perk: "You can drill recruits and hire spearmen in camp, and your loot share grows." },
+  { n: "Hirðman", rep: 40, kills: 14, share: 1.5, acts: 3, perk: "You serve in the jarl’s own retinue. His gifts and your share grow." },
+  { n: "Ship’s captain", rep: 80, kills: 22, share: 2, acts: 4, perk: "You command a ship. One more camp action and a larger share." },
+  { n: "Hersir", rep: 140, kills: 32, share: 2.5, acts: 4, perk: "You lead your own war-band. Three of your men stand on each side of you in the wall." },
 ];
+/** Rank from which the raider leads a war-band: a third man on each side of the wall. */
+export const WARBAND_RANK = 4;
+
+/** Training: the morale it costs, and the chance it works while the stat is below each level. */
+export const TRAINING = {
+  morale: 8,
+  chance: [{ below: 6, pct: 100 }, { below: 8, pct: 60 }, { below: 10, pct: 30 }],
+};
+
+/**
+ * Enemies, and the rewards for beating them, grow with each chapter up to tierCap.
+ * hitBase is an enemy's basic chance to hit you, before armour, tier and the other changes.
+ */
+export const ENEMIES = { tierCap: 12, hitBase: 47 };
+
+/** Timed swings: change to hit chance and damage for each result. Timing turned off counts as "good". */
+export const SWING = {
+  perfect: { hit: 10, dmg: 1.15 },
+  good: { hit: 0, dmg: 1 },
+  poor: { hit: -12, dmg: 1 },
+};
+
+/** Silver after a won battle: a share of the hoard by rank, plus the jarl's gift for your own part. */
+export const LOOT = { base: 4, perTier: 2, champion: 3, rout: 2 };
+export const JARL_GIFT = { perKill: 1, champion: 3, wallHeld: 2, perRank: 1 };
+
+/** Ways to spend silver in camp. */
+export const GIFT = { price: 10, rep: 3 };
+export const HIRE = { price: 12, hp: 12, maxPerSide: 3 };
 
 /** [name, tier, price]. Weapon tier adds 2 damage and 2% to hit; armour tier cuts enemy hits by 5%. */
 export type Gear = [string, number, number];

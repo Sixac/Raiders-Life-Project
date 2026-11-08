@@ -15,7 +15,6 @@ export type LogClass = "" | "head" | "good" | "bad";
 export interface Crew { n: string; hp: number; mx: number }
 export interface LogLine { t: string; c: LogClass }
 export interface Wound { id: WoundId; t: number }
-export interface LastBattle { kills: number; champ: boolean; held: boolean }
 
 export interface RunResult {
   k: EndingId;
@@ -49,9 +48,10 @@ export interface Game {
   jarl: boolean;
   ev: string | null;
   mid: boolean;
-  last: LastBattle | null;
   lastEv: string | null;
+  /** Hoard share and jarl's gift waiting on the after-battle screen. */
   loot?: number;
+  gift?: number;
   res?: RunResult;
 }
 

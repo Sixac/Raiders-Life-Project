@@ -1,12 +1,12 @@
 /* All screens. render() rebuilds the page from state after every action. */
 import type { Action, EndingId, Stat } from "../types";
-import { ARMOUR, CH, EDINGTON, EVENT_BY_ID, GODS, INTENTS, PERKS, RANKS, WEAPONS, WOUNDS } from "../content/tables";
+import { ARMOUR, CH, EDINGTON, EVENT_BY_ID, GIFT, GODS, HIRE, INTENTS, PERKS, RANKS, TRAINING, WEAPONS, WOUNDS } from "../content/tables";
 import { KEYS, store } from "../save/storage";
 import type { Game } from "../types";
 import { age, b, cap, eSkl, eStr, exposed, g, maxhp, maxSta, saveRun, st } from "../core/state";
 import { cl } from "../core/random";
 import { eventText, optionEnabled, optionOdds } from "../core/events";
-import { smithItems, trainP } from "../core/camp";
+import { hireSide, smithItems, trainP } from "../core/camp";
 import { dmgRange, foeP, hitP, mods, PROMPTS, skimP, withdrawP } from "../core/combat";
 import { CHOSEN_ENDINGS, ENDINGS, fordBonus } from "../core/endings";
 import { bar, btn, esc, shieldEl } from "./html";
@@ -99,7 +99,7 @@ function campView(): string {
     const none = G.acts < 1;
     h += `<p class="acts-left">${none ? "No camp actions left. Time to march." : `${G.acts} camp action${G.acts === 1 ? "" : "s"} left`}</p>`;
     if (ui.sub === "train") {
-      const s = (k: Stat, n: string) => btn(`${n} ${G[k]} to ${G[k] + 1}`, "act", ["train", k], { odds: trainP(k), dis: G.mor < 30 || trainP(k) === 0, note: "morale −8" });
+      const s = (k: Stat, n: string) => btn(`${n} ${G[k]} to ${G[k] + 1}`, "act", ["train", k], { odds: trainP(k), dis: G.mor < 30 || trainP(k) === 0, note: `morale −${TRAINING.morale}` });
       h += `<div class="actions">${s("str", "Strength")}${s("skl", "Skill")}${s("end", "Endurance")}${btn("Back", "sub", [null])}</div>`;
       if (G.mor < 30) h += `<p class="bad">Your morale is below 30. Feast, rest or fish before you train.</p>`;
     } else if (ui.sub === "forage") {
@@ -117,8 +117,9 @@ function campView(): string {
         ${btn("Forage", "sub", ["forage"], { dis: none, note: "hunt, raid or fish" })}
         ${btn("Visit the smith", "sub", ["smith"], { dis: none, note: "weapons and armour" })}
         ${btn("Make an offering", "sub", ["gods"], { dis: none, note: "gain a god’s favour" })}
-        ${btn("Seek the jarl", "act", ["jarl"], { dis: none || G.jarl, note: G.jarl ? "already seen this camp" : "once per camp" })}
+        ${btn("Bring the jarl a gift", "act", ["gift"], { dis: G.jarl || G.nid || G.silver < GIFT.price, note: G.nid ? "he takes nothing from a níðingr" : G.jarl ? "already given this camp" : `${GIFT.price} silver, reputation +${GIFT.rep}, no action used` })}
         ${G.rank >= 1 ? btn("Drill the recruits", "act", ["drill"], { dis: none, note: "reputation +2, morale −3" }) : ""}
+        ${G.rank >= 1 ? btn("Hire a spearman", "act", ["hire"], { dis: G.silver < HIRE.price || !hireSide(), note: hireSide() ? `${HIRE.price} silver, one more man beside you, no action used` : "your part of the wall is full" }) : ""}
       </div>`;
     }
   }
@@ -189,11 +190,12 @@ function battleView(): string {
 }
 
 function aftermathView(): string {
-  const G = g(), share = G.loot ?? 0;
+  const G = g(), share = G.loot ?? 0, gift = G.gift ?? 0;
+  const jarl = gift ? ` The jarl adds arm-rings worth ${gift} silver for your own part in the fight.` : G.nid ? " The jarl gives nothing to a níðingr." : "";
   return chapterHead() + recentView()
-    + tip("loot", "<b>The hoard.</b> Loot is pooled and shared out by rank. Skimming doubles your take if nobody sees you; skill improves your odds.")
-    + `<section class="event" aria-label="Sharing the loot"><p>The jarl’s men count out the hoard from the field. As ${withArticle(RANKS[G.rank].n.toLowerCase())}, your share is ${share} silver.</p>
-    <div class="actions">${btn("Take your share", "loot", ["take"], { note: `${share} silver` })}${btn("Skim from the hoard", "loot", ["skim"], { odds: skimP(), note: `${share * 2} silver if unseen, flogging if caught` })}</div></section>`;
+    + tip("loot", "<b>The hoard.</b> Loot is pooled and shared out by rank, and the jarl adds a gift for your own kills. Skimming doubles your share of the hoard if nobody sees you; skill improves your odds.")
+    + `<section class="event" aria-label="Sharing the loot"><p>The jarl’s men count out the hoard from the field. As ${withArticle(RANKS[G.rank].n.toLowerCase())}, your share is ${share} silver.${jarl}</p>
+    <div class="actions">${btn("Take your share", "loot", ["take"], { note: `${share + gift} silver` })}${btn("Skim from the hoard", "loot", ["skim"], { odds: skimP(), note: `${share * 2 + gift} silver if unseen; if caught, a flogging and nothing` })}</div></section>`;
 }
 function huntView(): string {
   const H = st.H!;

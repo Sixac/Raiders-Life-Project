@@ -1,6 +1,6 @@
 /* Health, wounds, crew and rank: rules shared by camp, events and battle. */
 import type { WoundId } from "../types";
-import { RANKS, WOUNDS } from "../content/tables";
+import { HIRE, RANKS, WARBAND_RANK, WOUNDS } from "../content/tables";
 import { cl, pct, pick } from "./random";
 import { crewAll, g, hasWound, maxhp, mkCrew, say } from "./state";
 import { die } from "./endings";
@@ -27,11 +27,16 @@ export function addWound(id?: WoundId): void {
   say(`Wound: ${WOUNDS[w].n.toLowerCase()} (${WOUNDS[w].d} until it mends).`, "bad");
 }
 
-/** After a battle, fill each side of the wall back to two men and heal everyone. */
+/** Men the army gives you on each side of the wall: two, or three once you lead a war-band. */
+export const crewPerSide = () => (g().rank >= WARBAND_RANK ? 3 : 2);
+/** Most men a side can hold, counting hired spearmen. */
+export const wallCap = () => HIRE.maxPerSide + (g().rank >= WARBAND_RANK ? 1 : 0);
+
+/** After a battle, fill each side of the wall back up and heal everyone. */
 export function refillCrew(): void {
   const G = g();
   const added: string[] = [];
-  for (const s of ["L", "R"] as const) while (G.crew[s].length < 2) { const c = mkCrew(); G.crew[s].push(c); added.push(c.n); }
+  for (const s of ["L", "R"] as const) while (G.crew[s].length < crewPerSide()) { const c = mkCrew(); G.crew[s].push(c); added.push(c.n); }
   crewAll().forEach((c) => (c.hp = c.mx));
   if (added.length) say(`New faces fill the gaps in the wall: ${added.join(" and ")}.`);
 }
