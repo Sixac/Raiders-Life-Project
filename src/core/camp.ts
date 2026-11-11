@@ -1,24 +1,29 @@
 /* A new run, camp actions, the hunting minigame and moving on between chapters. */
-import type { GodId, Stat } from "../types";
-import { ARMOUR, CH, EVENT_BY_ID, FRANKISH_FROM, GIFT, GODS, HIRE, RANKS, STATS, TRAINING, WEAPONS, WOUNDS } from "../content/tables";
+import type { BoonId, GodId, Stat } from "../types";
+import { ARMOUR, BOON_EFFECT, BOONS, CH, EVENT_BY_ID, FRANKISH_FROM, GIFT, GODS, HIRE, RANKS, STATS, TRAINING, WEAPONS, WOUNDS } from "../content/tables";
 import { cl, pct, R } from "./random";
-import { age, eSkl, g, hurt, maxhp, mkCrew, randomName, say, st, withArticle } from "./state";
+import { age, carries, eSkl, g, hurt, listOf, maxhp, mkCrew, randomName, say, st, withArticle } from "./state";
 import { addWound, fix, wallCap } from "./life";
 import { drawEvent } from "./events";
 
 export function newGame(name?: string): void {
   const L = st.L;
   const n = (name || "").trim().slice(0, 40) || randomName();
+  // The legacy gifts this raider carries are fixed now; what is bought later is for the next one.
+  const boons = [...L.carry];
+  const has = (id: BoonId) => (boons.includes(id) ? 1 : 0);
   st.G = {
-    name: n, ch: 0, str: 3 + L.up.str, skl: 3 + L.up.skl, end: 3 + L.up.end, hp: 0, mor: 60, rep: 0, silver: 6 + L.up.hoard * 8,
-    wp: 0, ar: 0, kills: 0, rank: 0, nid: false, wounds: [], eye: false, gods: { odin: 0, thor: 0, freyr: 0 }, f: {}, used: [],
-    log: [], crew: { L: [], R: [] }, phase: "camp", acts: 0, jarl: false, ev: null, mid: false, lastEv: null,
+    name: n, ch: 0, str: 3 + has("str"), skl: 3 + has("skl"), end: 3 + has("end"), hp: 0, mor: 60,
+    rep: 0, silver: 6 + has("hoard") * BOON_EFFECT.hoard,
+    wp: has("spear"), ar: has("jerkin"), kills: 0, rank: 0, nid: false, wounds: [], eye: false, gods: { odin: 0, thor: 0, freyr: 0 }, f: {}, used: [],
+    log: [], crew: { L: [], R: [] }, phase: "camp", acts: 0, jarl: false, ev: null, mid: false, lastEv: null, boons,
   };
   const G = st.G;
   G.hp = maxhp();
   for (const side of ["L", "L", "R", "R"] as const) G.crew[side].push(mkCrew());
   st.B = null;
   say(`${G.name}, eighteen winters old, takes an oar and swears to follow the jarl. Your saga begins.`);
+  if (boons.length) say(`From those who came before, you have: ${listOf(boons.map((id) => BOONS[id].n.toLowerCase()))}.`);
   startCamp();
 }
 
@@ -27,7 +32,7 @@ export function startCamp(): void {
   G.phase = "camp"; G.acts = RANKS[G.rank].acts; G.jarl = false;
   const c = CH[G.ch];
   say(`${c.year}: ${c.title}`, "head");
-  G.hp = Math.min(maxhp(), G.hp + 6 + G.gods.freyr * 2);
+  G.hp = Math.min(maxhp(), G.hp + 6 + G.gods.freyr * 2 + (carries("herbs") ? BOON_EFFECT.herbs : 0));
   const fav = G.gods.odin + G.gods.thor + G.gods.freyr;
   if (G.ch > 0 && fav === 0 && pct(50)) { G.mor -= 8; say("Ravens fly left over the camp. The gods have been neglected. Morale −8.", "bad"); }
   else if (fav >= 5) { G.mor += 5; say("An eagle circles the camp, a good omen. Morale +5.", "good"); }

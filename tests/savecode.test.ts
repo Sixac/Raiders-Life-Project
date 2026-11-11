@@ -48,13 +48,21 @@ describe("save codes", () => {
       (b: SaveBundle) => { b.run!.G.ch = 99; },
       (b: SaveBundle) => { b.run!.G.ev = "no-such-event"; },
       (b: SaveBundle) => { (b.run!.G as unknown as Record<string, unknown>).hp = "lots"; },
-      (b: SaveBundle) => { b.legacy.up.str = 50; },
+      (b: SaveBundle) => { (b.legacy.own as string[]).push("no-such-gift"); },
+      (b: SaveBundle) => { b.legacy.carry = ["skl"]; },                      // carried but not owned
+      (b: SaveBundle) => { b.legacy.slots = 9; },
       (b: SaveBundle) => { (b.run!.G.crew as unknown as Record<string, unknown>).L = "nobody"; },
     ]) {
       const b = bundle();
       change(b);
       await expect(decodeSave(plain(b))).rejects.toThrow(/different game or a newer version/);
     }
+  });
+  it("read a code made under the first legacy rules, with its perks as gifts", async () => {
+    const old = { legacy: { pts: 7, best: 250, runs: 3, fought: 12, up: { str: 2, skl: 1, end: 0, hoard: 0 }, seen: {}, timing: true, layout: "auto" }, run: null };
+    const back = await decodeSave(plain(old));
+    expect(back.legacy.own).toEqual(["str", "skl"]);
+    expect(back.legacy.pts).toBe(7);
   });
   it("load a legacy with no saga in progress", async () => {
     const back = await decodeSave(await encodeSave({ legacy: st.L, run: null }));

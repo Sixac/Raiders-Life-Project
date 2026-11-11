@@ -1,8 +1,8 @@
 /* All screens. render() rebuilds the page from state after every action. */
-import type { Action, EndingId, Stat } from "../types";
-import { ARMOUR, CH, EDINGTON, EVENT_BY_ID, FOE_KINDS, GIFT, GODS, HIRE, INTENTS, PERKS, RANKS, STATS, TRAINING, WEAPONS, WOUNDS } from "../content/tables";
+import type { Action, BoonId, EndingId, Stat } from "../types";
+import { ARMOUR, BOON_SLOTS, BOONS, CH, EDINGTON, EVENT_BY_ID, FOE_KINDS, GIFT, GODS, HIRE, INTENTS, RANKS, STATS, TRAINING, WEAPONS, WOUNDS } from "../content/tables";
 import { readSaved } from "../save/local";
-import { age, b, cap, eSkl, eStr, exposed, g, maxhp, maxSta, saveRun, st, withArticle } from "../core/state";
+import { age, b, cap, eSkl, eStr, exposed, g, listOf, maxhp, maxSta, nextBoonPrice, saveRun, st, withArticle } from "../core/state";
 import { cl } from "../core/random";
 import { eventText, optionEnabled, optionOdds } from "../core/events";
 import { hireSide, smithItems, trainP } from "../core/camp";
@@ -57,6 +57,7 @@ function sheet(): string {
   if (G.f.son) chips.push(`<span class="chip good">A son</span>`);
   if (G.f.oath) chips.push(`<span class="chip">Yule oath: kill the next champion</span>`);
   if (G.f.ford) chips.push(`<span class="chip good">Wulfstan’s ford</span>`);
+  G.boons?.forEach((id) => chips.push(`<span class="chip" title="${BOONS[id].d}">${BOONS[id].n}</span>`));
   const pips = (v: number) => `<span class="pips" role="img" aria-label="${v} of 3">${[0, 1, 2].map((i) => `<span class="pip${i < v ? " on" : ""}"></span>`).join("")}</span>`;
   return `<section class="panel" aria-label="Your raider">
     <div class="who"><h2>${esc(G.name)}</h2><span class="rank">${RANKS[G.rank].n}, ${age()} winters</span></div>
@@ -238,7 +239,7 @@ function overView(): string {
       ${r.parts.map((p) => `<tr><td>${p[0]}</td><td>${p[1]}</td></tr>`).join("")}
       <tr><td>Ending</td><td>${r.bonus}</td></tr>
       <tr class="total"><td>Total</td><td>${r.total}</td></tr></table>
-      <p>That earns ${r.pts} legacy point${r.pts === 1 ? "" : "s"} for your next raider. You now have ${L.pts}.</p></section>
+      <p>That earns ${r.pts} legacy point${r.pts === 1 ? "" : "s"} for your next raider. You now have ${L.pts}${(nextBoonPrice() ?? Infinity) <= L.pts ? ", enough for a new gift" : ""}.</p></section>
     <div class="actions">${btn("Spend legacy and begin again", "toMenu", [], { cls: "go" })}${btn("Share your saga", "shareSaga", [], { note: "a line about your raider, with a link to the game" })}</div>
     ${ui.shareMsg ? `<p class="good" role="status">${ui.shareMsg}</p>` : ""}
     ${ui.shareText ? `<div class="field"><label for="shareOut">Copying isn’t allowed here. Select this text and copy it yourself:</label><textarea id="shareOut" class="code" rows="3" readonly>${esc(ui.shareText)}</textarea></div>` : ""}
@@ -263,8 +264,35 @@ function savesPanel(): string {
       <div class="actions">${btn("Replace my save", "confirmImport", [], { cls: "go" })}${btn("Cancel", "cancelImport")}</div>` : ""}
   </section>`;
 }
+/** Title screen: legacy points, and the gifts they buy for the raiders who come after. */
+function legacyPanel(): string {
+  const L = st.L, price = nextBoonPrice(), full = L.carry.length >= L.slots;
+  const all = Object.keys(BOONS) as BoonId[];
+  const count = ["no", "one", "two", "three"];
+  const points = `Raiders who came before left you <b>${L.pts}</b> legacy point${L.pts === 1 ? "" : "s"}.`;
+  // Before the first saga there is nothing to spend, so the shop stays out of the way.
+  if (!L.runs && !L.pts && !L.own.length) {
+    return `<section class="panel" aria-label="Legacy"><h2>Legacy</h2>
+      <p>Every saga, however it ends, earns legacy points. They buy gifts for the raiders who come after: there are ${all.length} to choose from, and each raider carries ${count[L.slots]} of them.</p></section>`;
+  }
+  const gift = (id: BoonId) => {
+    const B = BOONS[id];
+    if (!L.own.includes(id)) return btn(B.n, "boon", [id], { dis: price === null || L.pts < price, note: `${cap(B.d)}. ${price} points` });
+    const on = L.carry.includes(id);
+    const state = on ? "Carried. Press to set it down" : full ? "Yours. Set another down to carry it" : "Yours. Press to carry it";
+    return btn(B.n, "boon", [id], { cls: on ? "on" : "", dis: !on && full, attrs: `aria-pressed="${on}"`, note: `${cap(B.d)}. ${state}` });
+  };
+  const carried = L.carry.length ? listOf(L.carry.map((id) => BOONS[id].n.toLowerCase())) : "nothing yet";
+  return `<section class="panel" aria-label="Legacy"><h2>Legacy</h2>
+    <p>${points} A gift, once bought, is there for every raider after, and each costs more than the last. One raider carries ${count[L.slots]} of them.</p>
+    <div class="perks">${all.map(gift).join("")}</div>
+    <p role="status">Your next raider carries ${carried}.</p>
+    ${L.slots < BOON_SLOTS.most ? `<div class="actions">${btn("A place for a third gift", "boonSlot", [], { dis: L.pts < BOON_SLOTS.price, note: `${BOON_SLOTS.price} points` })}</div>` : ""}
+    ${L.runs ? `<p class="muted">Best saga score ${L.best} across ${L.runs} raider${L.runs === 1 ? "" : "s"}.</p>` : ""}
+  </section>`;
+}
+
 function titleView(): string {
-  const L = st.L;
   // The saga kept in this browser is checked before anything here reads it.
   const { run: saved, damaged } = readSaved();
   const sc = saved ? Math.min(saved.G.ch, CH.length - 1) : 0;
@@ -284,11 +312,7 @@ function titleView(): string {
       <div class="actions">${btn(ui.confirmNew ? "Abandon the old saga and begin" : "Take the oar", "begin", [], { cls: saved ? "" : "go" })}</div>
       ${ui.confirmNew && saved ? `<p class="bad">This ends ${esc(saved.G.name)}’s saga without scoring it.</p>` : ""}
     </section>
-    <section class="panel" aria-label="Legacy"><h2>Legacy</h2>
-      <p>Raiders who came before left you <b>${L.pts}</b> legacy point${L.pts === 1 ? "" : "s"}. Each gift costs 3 and lasts for every raider after, up to three times.</p>
-      <div class="perks">${(Object.keys(PERKS) as (keyof typeof PERKS)[]).map((k) => btn(`${PERKS[k].n}, ${L.up[k]} of 3`, "up", [k], { dis: L.pts < 3 || L.up[k] >= 3, note: PERKS[k].d })).join("")}</div>
-      ${L.runs ? `<p class="muted">Best saga score ${L.best} across ${L.runs} raider${L.runs === 1 ? "" : "s"}.</p>` : ""}
-    </section>
+    ${legacyPanel()}
     <section class="panel" aria-label="Settings"><h2>Settings</h2><div class="actions">${settingsButtons()}</div></section>
     ${savesPanel()}
     <p class="muted">Sixteen chapters, each a camp and a battle. Death is permanent. Choose fights that suit your raider.</p>

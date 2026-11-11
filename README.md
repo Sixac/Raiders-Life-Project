@@ -9,7 +9,7 @@ A permadeath roguelite RPG about one ordinary raider of the Great Heathen Army, 
   <img src="docs/battle.png" alt="The battle at Saucourt: the enemy’s next move, the answers to it and the shield-wall" width="49%">
 </p>
 
-Each of the sixteen chapters is a camp (train, feast, rest, hunt, buy gear, make offerings, deal with events) followed by a shield-wall battle (read the enemy’s move, time your blows, push their wall back). Death is permanent; points from finished runs buy starting bonuses for the next raider.
+Each of the sixteen chapters is a camp (train, feast, rest, hunt, buy gear, make offerings, deal with events) followed by a shield-wall battle (read the enemy’s move, time your blows, push their wall back). Death is permanent, but every saga earns legacy points. They buy gifts that stay for all the raiders who come after, and each new raider carries two of them.
 
 It plays on phones too: on a narrow screen, or a short one such as a phone held sideways, it switches to a phone layout with large buttons, a status bar at the top and tabs at the bottom. Players can force either layout under Settings. On the public site it can also be added to a phone’s home screen and played offline.
 
@@ -26,7 +26,7 @@ You need [Node.js](https://nodejs.org) 22.12 or newer.
 ```sh
 npm install
 npm run dev        # play at http://localhost:5173 with live reload
-npm test           # check the content files and simulate 9,000 runs
+npm test           # check the content files and simulate 12,000 runs
 npm run build      # build dist/index.html, one self-contained file
 ```
 
@@ -72,6 +72,7 @@ tests/
   state.test.ts     whatever is in the browser’s storage, the game still starts
   help.test.ts      the How to play page leaves out no move, rank or god
   events.test.ts    how camp events are chosen: fixed moments, story steps, weights
+  boons.test.ts     legacy gifts: buying them, carrying them, what each does
   simulate.test.ts  plays thousands of runs with bots and checks the balance
   sim.ts            the bot and the balance report
 docs/               the screenshots at the top of this page
@@ -137,13 +138,13 @@ Run `npm test` after editing. The content test names the event and field if some
 
 ## Tuning the balance
 
-Most of the numbers you would want to change are in `src/content/tables.ts`: ranks and promotion thresholds, gear prices, training, enemy strength, the bonus for perfectly timed swings, how often each kind of enemy makes each move (`FOE_KINDS`), how often enemies feint and how likely a raider is to see through it (`FEINTS`), loot and the jarl's gift, and the prices of gifts and hired spearmen. The kinds of enemy in each battle are set by `foeKinds` in `src/content/chapters.json`. Hit chance and damage formulas are in `src/core/combat.ts`, and the ending bonuses in `src/core/endings.ts`.
+Most of the numbers you would want to change are in `src/content/tables.ts`: ranks and promotion thresholds, gear prices, training, enemy strength, the bonus for perfectly timed swings, how often each kind of enemy makes each move (`FOE_KINDS`), how often enemies feint and how likely a raider is to see through it (`FEINTS`), loot and the jarl's gift, the prices of gifts and hired spearmen, and the legacy gifts with their prices and how many one raider carries (`BOONS`, `BOON_PRICES`, `BOON_SLOTS`). The kinds of enemy in each battle are set by `foeKinds` in `src/content/chapters.json`. Hit chance and damage formulas are in `src/core/combat.ts`, and the ending bonuses in `src/core/endings.ts`.
 
-`npm run balance` plays 9,000 runs with bots and prints a report for each kind of player: careful players (who answer the enemy's moves) with poor, average and skilled timing or timing turned off, careless players, and a careful player who follows the stories. For each it shows how many survive to 900, where the rest die, when each rank is first reached, silver and reputation at the end, and which ending would score best. It also shows how often a story begins, how often each later step of a story comes, and which events are seen least.
+`npm run balance` plays 12,000 runs with bots and prints a report for each kind of player: careful players (who answer the enemy's moves) with poor, average and skilled timing or timing turned off, careless players, a careful player who follows the stories, and careful players carrying the strongest two and three legacy gifts. For each it shows how many survive to 900, where the rest die, when each rank is first reached, silver and reputation at the end, and which ending would score best. It also shows how often a story begins, how often each later step of a story comes, and which events are seen least.
 
 The How to play page (`src/ui/help.ts`) is built from the same tables, so it follows most changes by itself. The few numbers written out there by hand come from formulas in the rules, and the comments in that file say which.
 
-The test fails when a change tips the game too far, for example if a careful player with average timing survives to 900 less than 15% or more than 45% of the time, if timing decides too much, if the top ranks come before Edington, if one ending is best for nearly everyone, if a story’s later steps stop coming, or if an event becomes so rare it might as well not be there. The limits are in `tests/simulate.test.ts`; the bot is in `tests/sim.ts`.
+The test fails when a change tips the game too far, for example if a careful player with average timing survives to 900 less than 15% or more than 45% of the time, if timing decides too much, if the top ranks come before Edington, if one ending is best for nearly everyone, if a story’s later steps stop coming, if an event becomes so rare it might as well not be there, if the strongest legacy gifts a raider can carry make the game too easy, or if the whole legacy shop can be bought in a few sagas. The limits are in `tests/simulate.test.ts`; the bot is in `tests/sim.ts`.
 
 ## The public site
 
@@ -156,6 +157,8 @@ The test fails when a change tips the game too far, for example if a careful pla
 ## Saves
 
 Saves live in the player’s browser. On the title screen, **Copy save code** turns the legacy and any saga in progress into a short code (compressed, about 600 characters) that can be kept as a backup or pasted into **Load a save code** on another device. Codes are checked field by field before loading, so a damaged or edited code is refused with a message instead of breaking the game; a saga saved in the middle of a battle resumes in camp just before it.
+
+Legacy saved by an earlier version carries over: each perk bought under the first legacy rules becomes the gift of the same name.
 
 The saga kept in the browser goes through the same checks every time it is read. If it is damaged, or an update can no longer continue it, the title screen says so instead of offering a “Continue” button that does nothing. If something goes wrong during play, the game returns to the title screen with a message, and the last save made before the problem is still there.
 

@@ -1,5 +1,5 @@
 /* Tuning tables: ranks, gear, wounds, gods, legacy perks, enemy moves. */
-import type { Action, Chapter, FoeKind, GameEvent, GodId, IntentId, PerkId, Stat, WoundId } from "../types";
+import type { Action, BoonId, Chapter, FoeKind, GameEvent, GodId, IntentId, Stat, WoundId } from "../types";
 import chaptersJson from "./chapters.json";
 import eventsJson from "./events.json";
 
@@ -86,12 +86,28 @@ export const GODS: Record<GodId, { n: string; d: string }> = {
   freyr: { n: "Freyr", d: "+2 healing per favour each camp; at 2 favour wounds mend faster" },
 };
 
-export const PERKS: Record<PerkId, { n: string; d: string }> = {
-  str: { n: "Strong arms", d: "+1 starting strength" },
-  skl: { n: "Sharp eyes", d: "+1 starting skill" },
-  end: { n: "Hard hide", d: "+1 starting endurance" },
-  hoard: { n: "Father’s hoard", d: "+8 starting silver" },
+/**
+ * Legacy gifts. Each is bought once with legacy points and is then there for every raider after,
+ * but one raider carries only a few of them (BOON_SLOTS). So buying more gifts brings more
+ * choice, not ever more strength: `npm run balance` checks how strong the best of them are together.
+ */
+export const BOON_EFFECT = { hoard: 16, herbs: 3, lungs: 2, read: 4, morale: 30 };
+export const BOONS: Record<BoonId, { n: string; d: string }> = {
+  str: { n: "Strong arms", d: "+1 strength" },
+  skl: { n: "Sharp eyes", d: "+1 skill" },
+  end: { n: "Hard hide", d: "+1 endurance" },
+  hoard: { n: "Father’s hoard", d: `+${BOON_EFFECT.hoard} silver to start with` },
+  spear: { n: "Father’s spear", d: "start with an ash spear" },
+  jerkin: { n: "A mother’s stitching", d: "start with a leather jerkin" },
+  herbs: { n: "Healer’s herbs", d: `+${BOON_EFFECT.herbs} healing in every camp` },
+  lungs: { n: "Rower’s lungs", d: `+${BOON_EFFECT.lungs} stamina` },
+  wolf: { n: "A wolf’s patience", d: `you read your enemy’s next move ${BOON_EFFECT.read}% more often` },
+  heart: { n: "A glad heart", d: `your morale never falls below ${BOON_EFFECT.morale}` },
 };
+/** The price of the next gift, by how many are owned already: each costs more than the last. */
+export const BOON_PRICES = [15, 25, 40, 55, 70, 90, 110, 130, 150, 170];
+/** How many gifts one raider carries, and the price of a place for one more. */
+export const BOON_SLOTS = { base: 2, most: 3, price: 200 };
 
 export const COST: Record<Action, number> = { strike: 1, heavy: 2, berserk: 0, rally: 1, guard: 0, bash: 1, flee: 0 };
 export const ATTACKS: Action[] = ["strike", "heavy", "berserk"];

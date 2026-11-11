@@ -6,7 +6,8 @@
  * No browser-only code here, so the tests can run it.
  */
 import type { Battle, Game, IntentId, Legacy } from "../types";
-import { ARMOUR, CH, EVENT_BY_ID, FOE_KINDS, INTENTS, RANKS, WEAPONS, WOUNDS } from "../content/tables";
+import { ARMOUR, BOON_SLOTS, BOONS, CH, EVENT_BY_ID, FOE_KINDS, INTENTS, RANKS, WEAPONS, WOUNDS } from "../content/tables";
+import { soundLegacy } from "./state";
 import { SAVE_VERSION } from "../save/storage";
 import { PROMPTS } from "./combat";
 
@@ -74,18 +75,22 @@ function need(ok: boolean): void { if (!ok) throw wrong(); }
 
 function checkLegacy(x: unknown): Legacy {
   need(isObj(x));
-  const L = x as Obj, up = L.up as Obj;
-  need(isNum(L.pts) && L.pts >= 0 && isNum(L.best) && isNum(L.runs) && isNum(L.fought) && isObj(up) && isObj(L.seen));
-  need(["str", "skl", "end", "hoard"].every((k) => up[k] === undefined || isInt(up[k], 0, 3)));
+  const L = x as Obj;
+  need(isNum(L.pts) && L.pts >= 0 && isNum(L.best) && isNum(L.runs) && isNum(L.fought) && isObj(L.seen));
   need(Object.values(L.seen as Obj).every(isBool));
-  return {
-    pts: L.pts as number, best: L.best as number, runs: L.runs as number, fought: L.fought as number,
-    up: { str: (up.str as number) ?? 0, skl: (up.skl as number) ?? 0, end: (up.end as number) ?? 0, hoard: (up.hoard as number) ?? 0 },
-    seen: L.seen as Record<string, boolean>,
-    timing: isBool(L.timing) ? L.timing : true,
-    layout: L.layout === "phone" || L.layout === "desktop" ? L.layout : "auto",
-  };
+  if (L.own !== undefined) {
+    const own = L.own, carry = L.carry;
+    if (!isGifts(own) || !isGifts(carry)) throw wrong();
+    need(carry.every((id) => own.includes(id)) && isInt(L.slots, BOON_SLOTS.base, BOON_SLOTS.most) && carry.length <= (L.slots as number));
+  } else {
+    // A code made under the first legacy rules: four perks with levels.
+    const up = L.up as Obj;
+    need(isObj(up) && ["str", "skl", "end", "hoard"].every((k) => up[k] === undefined || isInt(up[k], 0, 3)));
+  }
+  return soundLegacy(L);
 }
+/** A list of legacy gifts, each a real one and none twice. */
+const isGifts = (x: unknown): x is string[] => Array.isArray(x) && x.every((id) => isStr(id) && id in BOONS) && new Set(x).size === x.length;
 
 const PHASES = ["camp", "battle", "aftermath", "hunt", "finale"];
 const LOG_CLASSES = ["", "head", "good", "bad"];
@@ -107,6 +112,7 @@ function checkGame(x: unknown): Game {
   need(isObj(G.gods) && ["odin", "thor", "freyr"].every((k) => isInt((G.gods as Obj)[k], 0, 3)));
   need(isObj(G.f) && Object.values(G.f as Obj).every(isNum));
   need(Array.isArray(G.used) && G.used.every((u) => isStr(u)));
+  need(G.boons === undefined || isGifts(G.boons));
   need(G.at === undefined || (isObj(G.at) && Object.values(G.at).every((ch) => isInt(ch, 0, CH.length - 1))));
   need(Array.isArray(G.log) && G.log.every((l) => isObj(l) && isStr(l.t, 2000) && LOG_CLASSES.includes(l.c as string)));
   const crew = G.crew as Obj;

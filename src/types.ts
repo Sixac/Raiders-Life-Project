@@ -10,7 +10,8 @@ export type IntentId = "overhead" | "thrust" | "hook" | "hold" | "shove" | "char
 export type FoeKind = "levy" | "spear" | "axe" | "rider" | "elite";
 export type Action = "strike" | "heavy" | "berserk" | "rally" | "guard" | "bash" | "flee";
 export type Quality = "perfect" | "good" | "poor" | null;
-export type PerkId = "str" | "skl" | "end" | "hoard";
+/** Legacy gifts: bought with legacy points, kept for every raider after. See BOONS in content/tables.ts. */
+export type BoonId = "str" | "skl" | "end" | "hoard" | "spear" | "jerkin" | "herbs" | "lungs" | "wolf" | "heart";
 export type Layout = "auto" | "phone" | "desktop";
 export type LogClass = "" | "head" | "good" | "bad";
 
@@ -53,6 +54,8 @@ export interface Game {
   ev: string | null;
   mid: boolean;
   lastEv: string | null;
+  /** The legacy gifts this raider carries. */
+  boons?: BoonId[];
   /** Hoard share and jarl's gift waiting on the after-battle screen. */
   loot?: number;
   gift?: number;
@@ -106,7 +109,11 @@ export interface Hunt {
 /** Persists across runs. */
 export interface Legacy {
   pts: number;
-  up: Record<PerkId, number>;
+  /** Gifts bought with legacy points (kept for good), and the ones the next raider will carry. */
+  own: BoonId[];
+  carry: BoonId[];
+  /** How many gifts one raider can carry. */
+  slots: number;
   seen: Record<string, boolean>;
   best: number;
   runs: number;

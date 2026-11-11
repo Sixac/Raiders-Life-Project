@@ -1,14 +1,14 @@
 /* Health, wounds, crew and rank: rules shared by camp, events and battle. */
 import type { WoundId } from "../types";
-import { HIRE, RANKS, WARBAND_RANK, WOUNDS } from "../content/tables";
+import { BOON_EFFECT, HIRE, RANKS, WARBAND_RANK, WOUNDS } from "../content/tables";
 import { cl, pct, pick } from "./random";
-import { crewAll, g, hasWound, maxhp, mkCrew, say } from "./state";
+import { carries, crewAll, g, hasWound, listOf, maxhp, mkCrew, say } from "./state";
 import { die } from "./endings";
 
 /** Clamp values after any change. Returns true if the raider has died (and the run is over). */
 export function fix(): boolean {
   const G = g();
-  G.mor = cl(G.mor, 0, 100);
+  G.mor = cl(G.mor, carries("heart") ? BOON_EFFECT.morale : 0, 100);
   G.silver = Math.max(0, G.silver);
   G.hp = Math.min(G.hp, maxhp());
   if (G.hp <= 0) { die("death"); return true; }
@@ -38,7 +38,7 @@ export function refillCrew(): void {
   const added: string[] = [];
   for (const s of ["L", "R"] as const) while (G.crew[s].length < crewPerSide()) { const c = mkCrew(); G.crew[s].push(c); added.push(c.n); }
   crewAll().forEach((c) => (c.hp = c.mx));
-  if (added.length) say(`New faces fill the gaps in the wall: ${added.join(" and ")}.`);
+  if (added.length) say(`New faces fill the gaps in the wall: ${listOf(added)}.`);
 }
 
 export function promote(): void {
