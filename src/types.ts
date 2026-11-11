@@ -43,6 +43,8 @@ export interface Game {
   /** Story flags set by events, e.g. rival, wife, thegn, ford, oath, son. */
   f: Record<string, number>;
   used: string[];
+  /** The chapter in which each event was met, so a story can pick up again some chapters later. */
+  at?: Record<string, number>;
   log: LogLine[];
   crew: { L: Crew[]; R: Crew[] };
   phase: Phase;
@@ -193,6 +195,11 @@ export interface GameEvent {
   priority?: boolean;
   repeatable?: boolean;
   when?: Cond;
+  /** The next step of a story: it can only come once that event has been met, at least `gap` chapters earlier (1 if not given). */
+  after?: string;
+  gap?: number;
+  /** How strongly this event is favoured over the others that could come. By default, the fewer chapters it belongs to, the more. */
+  weight?: number;
   text: string;
   options: EventOption[];
 }

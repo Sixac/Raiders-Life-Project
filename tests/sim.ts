@@ -4,18 +4,29 @@
  * "Careful" bots answer every enemy move they can read with its counter; "careless" ones mostly
  * just attack. Timed swings are modelled with a share of perfect and badly timed blows, since a
  * player's timing changes the odds a lot; "off" plays with timed swings turned off.
+ * Bots pick event options at random; one that "follows the stories" takes the option that keeps
+ * a story going whenever there is one, as a player curious about Eadgyth or Hrafn would.
  */
 import type { Action, Quality } from "../src/types";
 import { MemoryStore, useStore } from "../src/save/storage";
 import { maxhp, st } from "../src/core/state";
 import { act, hireSide, newGame } from "../src/core/camp";
-import { choose, optionEnabled } from "../src/core/events";
+import { choose, eligibleEvents, optionEnabled } from "../src/core/events";
 import { answer, loot, march, resolve, turn, visibleIntent } from "../src/core/combat";
 import { crossSea, ending, ENDINGS } from "../src/core/endings";
-import { ARMOUR, ATTACKS, CH, COST, EDINGTON, EVENT_BY_ID, FRANKISH_FROM, GIFT, HIRE, INTENTS, RANKS, WEAPONS } from "../src/content/tables";
+import { ARMOUR, ATTACKS, CH, COST, EDINGTON, EVENT_BY_ID, EVENTS, FRANKISH_FROM, GIFT, HIRE, INTENTS, RANKS, WEAPONS } from "../src/content/tables";
 
 export type Timing = "off" | "poor" | "average" | "skilled";
-export interface Profile { careful: boolean; timing: Timing }
+export interface Profile { careful: boolean; timing: Timing; stories?: boolean }
+
+/** The first event of each story: one that later events follow and that follows nothing itself. */
+export const STORY_OPENERS = [...new Set(EVENTS.filter((e) => e.after).map((e) => {
+  let first = EVENT_BY_ID[e.after!];
+  while (first.after) first = EVENT_BY_ID[first.after];
+  return first.id;
+}))];
+/** By this chapter (counting from 0) every story opener has had its chance to appear. */
+export const STORIES_BEGUN_BY = Math.max(...STORY_OPENERS.map((id) => EVENT_BY_ID[id].chapters?.[1] ?? 0)) + 1;
 
 /** Share of perfect and badly timed swings; the rest are good. */
 const TIMING: Record<Exclude<Timing, "off">, { perfect: number; poor: number }> = {
@@ -40,6 +51,12 @@ export interface Report {
   bestEnding: Record<string, number>;
   roundsPerBattle: number[];
   eventsSeen: Set<string>;
+  /** For each event: the runs in which it appeared, and the runs in which it could have. */
+  eventMet: Record<string, number>;
+  eventCould: Record<string, number>;
+  /** Runs that lasted until every story opener had had its chance, and how many of them began a story. */
+  storyRuns: number;
+  storyBegun: number;
 }
 
 const median = (a: number[]) => { if (!a.length) return NaN; const b = [...a].sort((x, y) => x - y); return b[b.length >> 1]; };
@@ -89,23 +106,30 @@ export function simulate(p: Profile, runs: number): Report {
   useStore(new MemoryStore());
   st.interactive = false;
   const r: Report = { runs, errors: [], reached900: 0, deathsAt: Array(CH.length).fill(0), rankChapter: [], rankReached: Array(RANKS.length).fill(0),
-    silver900: [], rep900: [], bestEnding: { baptism: 0, sail: 0, danelaw: 0 }, roundsPerBattle: [], eventsSeen: new Set() };
+    silver900: [], rep900: [], bestEnding: { baptism: 0, sail: 0, danelaw: 0 }, roundsPerBattle: [], eventsSeen: new Set(),
+    eventMet: {}, eventCould: {}, storyRuns: 0, storyBegun: 0 };
   const rankChapters: number[][] = RANKS.map(() => []);
   for (let n = 0; n < runs; n++) {
     try {
       newGame("Test Raider");
       let steps = 0, rounds = 0, topRank = 0;
+      const met = new Set<string>(), could = new Set<string>();
       while (st.G!.phase !== "over" && steps++ < 9000) {
         const G = st.G!;
         while (topRank < G.rank) { topRank++; rankChapters[topRank].push(G.ch); r.rankReached[topRank]++; }
         if (G.phase === "camp") {
           if (G.ev) {
             r.eventsSeen.add(G.ev);
+            met.add(G.ev); could.add(G.ev);
+            for (const other of eligibleEvents()) could.add(other.id);
             const e = EVENT_BY_ID[G.ev];
             let ok = e.options.map((o, i) => (optionEnabled(o) ? i : -1)).filter((i) => i >= 0);
             // Bots stay with the army so whole runs get tested.
             const stay = ok.filter((i) => !(e.id === "deserters" && i === 2) && !(e.id === "halfdan" && i === 0));
             if (stay.length) ok = stay;
+            // Following the stories: take an option that sets a story going or keeps it going.
+            const hooks = ok.filter((i) => Object.values(e.options[i].pass.flags ?? {}).some((v) => v));
+            if (p.stories && hooks.length) ok = hooks;
             choose(ok[Math.floor(Math.random() * ok.length)]);
           } else { if (G.acts < 1) rounds = 0; campStep(); }
         } else if (G.phase === "battle") {
@@ -127,12 +151,30 @@ export function simulate(p: Profile, runs: number): Report {
       if (G.phase !== "over") throw new Error(`did not finish (phase ${G.phase}, chapter ${G.ch})`);
       if (G.res!.k === "death") r.deathsAt[G.ch]++;
       else if (G.ch === CH.length - 1) r.reached900++;
+      for (const id of met) r.eventMet[id] = (r.eventMet[id] ?? 0) + 1;
+      for (const id of could) r.eventCould[id] = (r.eventCould[id] ?? 0) + 1;
+      if (G.ch >= STORIES_BEGUN_BY) { r.storyRuns++; if (STORY_OPENERS.some((id) => met.has(id))) r.storyBegun++; }
     } catch (e) {
       r.errors.push(String((e as Error).stack || e));
     }
   }
   r.rankChapter = rankChapters.map((c, i) => (i === 0 ? 0 : c.length ? median(c) : null));
   return r;
+}
+
+/** How often an event appeared, as a percentage of the runs in which it could have. */
+export const shown = (r: Report, id: string) => pctOf(r.eventMet[id] ?? 0, r.eventCould[id] ?? 0);
+
+/** How the stories and the rarer events fared, printed for the bot that follows the stories. */
+export function describeEvents(r: Report): string {
+  const steps = (id: string): string[] => [id, ...EVENTS.filter((e) => e.after === id).flatMap((e) => steps(e.id))];
+  const line = (id: string) => `${id} ${shown(r, id).toFixed(0)}%`;
+  const rare = EVENTS.filter((e) => r.eventCould[e.id]).sort((a, b) => shown(r, a.id) - shown(r, b.id)).slice(0, 8);
+  return [
+    `  a story begins in ${pctOf(r.storyBegun, r.storyRuns).toFixed(0)}% of runs that last to chapter ${STORIES_BEGUN_BY + 1}`,
+    ...STORY_OPENERS.map((id) => `  story: ${line(id)} of all runs; then, of the runs where each step could come: ${steps(id).slice(1).map(line).join(", ")}`),
+    `  events seen least often, of the runs where they could come: ${rare.map((e) => line(e.id)).join(", ")}`,
+  ].join("\n");
 }
 
 /** One readable block per profile, printed by `npm run balance`. */

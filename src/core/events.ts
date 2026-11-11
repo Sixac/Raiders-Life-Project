@@ -1,7 +1,7 @@
 /* Camp events: choosing which one appears, and carrying out the option the player picks. */
 import type { Cond, EventOption, GameEvent, GodId, Outcome } from "../types";
-import { EVENT_BY_ID, EVENTS, GODS } from "../content/tables";
-import { pct, pick } from "./random";
+import { CH, EVENT_BY_ID, EVENTS, GODS } from "../content/tables";
+import { pct, pick, pickWeighted } from "./random";
 import { age, ck, crewAll, eSkl, eStr, g, mkCrew, say } from "./state";
 import { addWound, fix } from "./life";
 import { finish } from "./endings";
@@ -36,14 +36,46 @@ export function fillText(t: string, vars: Record<string, string | number> = {}):
 }
 export const eventText = (e: GameEvent) => fillText(e.text);
 
+const firstChapter = (e: GameEvent) => (e.chapters ? e.chapters[0] : 0);
+const lastChapter = (e: GameEvent) => (e.chapters ? e.chapters[1] : CH.length - 1);
+
+/**
+ * How strongly an event is favoured among those that could come. An event tied to one battle or
+ * to a few years says more about its time than one that could happen in any camp, so the fewer
+ * chapters it belongs to, the likelier it is. A `weight` in events.json overrides this.
+ */
+export function eventWeight(e: GameEvent): number {
+  if (e.weight !== undefined) return e.weight;
+  const span = lastChapter(e) - firstChapter(e) + 1;
+  return span <= 1 ? 12 : span <= 2 ? 6 : span <= 3 ? 3 : span <= 6 ? 2 : 1;
+}
+
+/** For the next step of a story: has the step before it been met, long enough ago? */
+function follows(e: GameEvent): boolean {
+  if (!e.after) return true;
+  const G = g(), met = G.at?.[e.after];
+  // A saga begun before chapters were recorded only knows that the earlier step happened.
+  if (met === undefined) return G.used.includes(e.after);
+  return G.ch - met >= (e.gap ?? 1);
+}
+
+/** Every event that could come in this camp. */
+export function eligibleEvents(): GameEvent[] {
+  const G = g();
+  return EVENTS.filter((e) => (e.repeatable || !G.used.includes(e.id)) && e.id !== G.lastEv
+    && G.ch >= firstChapter(e) && G.ch <= lastChapter(e)
+    && G.rank >= (e.minRank || 0) && holds(e.when) && follows(e));
+}
+
 export function drawEvent(): string | null {
   const G = g();
-  const ok = EVENTS.filter((e) => (e.repeatable || !G.used.includes(e.id)) && e.id !== G.lastEv
-    && G.ch >= (e.chapters ? e.chapters[0] : 0) && G.ch <= (e.chapters ? e.chapters[1] : 99)
-    && G.rank >= (e.minRank || 0) && holds(e.when));
+  const ok = eligibleEvents();
   if (!ok.length) return null;
+  // Fixed moments of the war and the next step of a story come before anything else,
+  // the one whose time runs out soonest first. Otherwise the pick is weighted.
   const pr = ok.filter((e) => e.priority);
-  const e = pick(pr.length ? pr : ok);
+  const soonest = Math.min(...pr.map(lastChapter));
+  const e = pr.length ? pick(pr.filter((x) => lastChapter(x) === soonest)) : pickWeighted(ok, eventWeight);
   G.lastEv = e.id;
   return e.id;
 }
@@ -79,6 +111,7 @@ export function choose(i: number): void {
   const o = e.options[i];
   if (!o || !optionEnabled(o)) return;
   if (!e.repeatable) G.used.push(e.id);
+  (G.at ??= {})[e.id] = G.ch;
   G.ev = null;
   if (o.pay) G.silver -= o.pay;
   const odds = optionOdds(o);

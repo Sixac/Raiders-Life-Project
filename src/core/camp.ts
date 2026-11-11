@@ -1,6 +1,6 @@
 /* A new run, camp actions, the hunting minigame and moving on between chapters. */
 import type { GodId, Stat } from "../types";
-import { ARMOUR, CH, FRANKISH_FROM, GIFT, GODS, HIRE, RANKS, STATS, TRAINING, WEAPONS, WOUNDS } from "../content/tables";
+import { ARMOUR, CH, EVENT_BY_ID, FRANKISH_FROM, GIFT, GODS, HIRE, RANKS, STATS, TRAINING, WEAPONS, WOUNDS } from "../content/tables";
 import { cl, pct, R } from "./random";
 import { age, eSkl, g, hurt, maxhp, mkCrew, randomName, say, st, withArticle } from "./state";
 import { addWound, fix, wallCap } from "./life";
@@ -32,15 +32,20 @@ export function startCamp(): void {
   if (G.ch > 0 && fav === 0 && pct(50)) { G.mor -= 8; say("Ravens fly left over the camp. The gods have been neglected. Morale −8.", "bad"); }
   else if (fav >= 5) { G.mor += 5; say("An eagle circles the camp, a good omen. Morale +5.", "good"); }
   G.ev = drawEvent();
-  G.mid = pct(55);
+  // A second event may turn up partway through the camp. It always does after a fixed moment of
+  // the war or a step in a story, so those never crowd out the chapter's other events.
+  G.mid = pct(55) || isFixed(G.ev);
   fix();
 }
+
+const isFixed = (id: string | null) => !!(id && EVENT_BY_ID[id].priority);
 
 /** Use up one camp action; a second event may turn up partway through the camp. */
 function spend(): void {
   const G = g();
   G.acts--;
-  if (G.mid && !G.ev && G.acts === RANKS[G.rank].acts - 2) { G.mid = false; G.ev = drawEvent(); }
+  // If that one was a fixed moment or a story step as well, one more follows the next action.
+  if (G.mid && !G.ev && G.acts <= RANKS[G.rank].acts - 2) { G.ev = drawEvent(); G.mid = isFixed(G.ev); }
   fix();
 }
 
