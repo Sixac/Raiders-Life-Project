@@ -147,14 +147,6 @@ The How to play page (`src/ui/help.ts`) is built from the same tables, so it fol
 
 The test fails when a change tips the game too far, for example if a careful player with average timing survives to 900 less than 15% or more than 45% of the time, if timing decides too much, if the top ranks come before Edington, if one ending is best for nearly everyone, if a story’s later steps stop coming, if an event becomes so rare it might as well not be there, if the strongest legacy gifts a raider can carry make the game too easy, if the whole legacy shop can be bought in a few sagas, or if spending silver on your men stops being worth it. The limits are in `tests/simulate.test.ts`; the bot is in `tests/sim.ts`.
 
-## The public site
-
-- **No outside requests.** The fonts (Alegreya and Uncial Antiqua, both under the SIL Open Font License) are bundled into the page from the `@fontsource` packages, so visitors’ browsers never contact Google or anyone else. That also avoids the GDPR problem of loading Google Fonts from Google’s servers.
-- **Link previews.** `index.html` has a description and Open Graph tags, so links shared on Discord, Reddit or in messages show the title, a line of text and `public/preview.png`. If the game moves to another address, change `og:url` and `og:image` there; the share button uses `og:url` too.
-- **Offline and installable.** On the https site, `public/sw.js` keeps a copy of the game so it starts without a connection once it has been opened, and `public/manifest.webmanifest` lets phones add it to the home screen. The worker fetches from the network first, so players get new versions as soon as they are online. If you change the list of files it caches, change `CACHE` in `sw.js` so old copies are cleared.
-- **Version.** The foot of the title screen shows the `version` from `package.json`, with links to the source and to the page for reporting problems. Raise the version with each release.
-- **Sharing.** The end screen has a “Share your saga” button: on phones it opens the share sheet, elsewhere it copies a line such as “Ketil Ormsson, hersir, sailed home with 260 silver in 900. Saga score 309.” with a link to the game.
-
 ## Saves
 
 Saves live in the player’s browser. On the title screen, **Copy save code** turns the legacy and any saga in progress into a short code (compressed, about 600 characters) that can be kept as a backup or pasted into **Load a save code** on another device. Codes are checked field by field before loading, so a damaged or edited code is refused with a message instead of breaking the game; a saga saved in the middle of a battle resumes in camp just before it.
