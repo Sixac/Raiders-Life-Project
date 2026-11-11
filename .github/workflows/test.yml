@@ -1,10 +1,10 @@
-# Runs the checks on every pull request, so problems show up before merging.
+# Runs the checks on every pull request, so problems show up before merging. That includes a
+# pull request made on top of another one, which targets that one's branch until it is merged.
 # (Pushes to master are tested by the deploy workflow before it publishes.)
 name: Test
 
 on:
   pull_request:
-    branches: [master]
 
 permissions:
   contents: read

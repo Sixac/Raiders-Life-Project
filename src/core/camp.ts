@@ -1,8 +1,8 @@
 /* A new run, camp actions, the hunting minigame and moving on between chapters. */
 import type { GodId, Stat } from "../types";
-import { ARMOUR, CH, FRANKISH_FROM, GIFT, GODS, HIRE, RANKS, TRAINING, WEAPONS, WOUNDS } from "../content/tables";
+import { ARMOUR, CH, FRANKISH_FROM, GIFT, GODS, HIRE, RANKS, STATS, TRAINING, WEAPONS, WOUNDS } from "../content/tables";
 import { cl, pct, R } from "./random";
-import { age, eSkl, g, hurt, maxhp, mkCrew, randomName, say, st } from "./state";
+import { age, eSkl, g, hurt, maxhp, mkCrew, randomName, say, st, withArticle } from "./state";
 import { addWound, fix, wallCap } from "./life";
 import { drawEvent } from "./events";
 
@@ -62,7 +62,6 @@ export function hireSide(): "L" | "R" | null {
   const G = g(), side = G.crew.L.length <= G.crew.R.length ? "L" : "R";
   return G.crew[side].length < wallCap() ? side : null;
 }
-const STAT_NAMES: Record<Stat, string> = { str: "Strength", skl: "Skill", end: "Endurance" };
 
 /** Purchases made in passing: they cost silver but no camp action, so they never compete with training. */
 export const QUICK: CampAction[] = ["gift", "hire"];
@@ -75,8 +74,8 @@ export function act(k: CampAction, x?: string): void {
       const s = x as Stat;
       if (G.mor < 30) { say("You are too downhearted to train. Raise your morale first."); return; }
       G.mor -= TRAINING.morale;
-      if (pct(trainP(s))) { G[s]++; if (s === "end") G.hp += 2; say(`You drill until your arms shake. ${STAT_NAMES[s]} +1, morale −${TRAINING.morale}.`); }
-      else say(`You drill hard but learn nothing new. ${STAT_NAMES[s]} is near its limit. Morale −${TRAINING.morale}.`);
+      if (pct(trainP(s))) { G[s]++; if (s === "end") G.hp += 2; say(`You drill until your arms shake. ${STATS[s].n} +1, morale −${TRAINING.morale}.`); }
+      else say(`You drill hard but learn nothing new. ${STATS[s].n} is near its limit. Morale −${TRAINING.morale}.`);
       return spend();
     }
     case "feast":
@@ -143,7 +142,7 @@ export function act(k: CampAction, x?: string): void {
       if (kind === "w" && i >= 4 && G.ch < FRANKISH_FROM) return;
       G.silver -= item[2];
       if (kind === "w") G.wp = i; else G.ar = i;
-      say(`The smith sells you a ${item[0]}. Silver −${item[2]}.`);
+      say(`The smith sells you ${withArticle(item[0])}. Silver −${item[2]}.`);
       return spend();
     }
   }

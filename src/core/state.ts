@@ -18,11 +18,24 @@ export const st = {
 function defaultLegacy(): Legacy {
   return { pts: 0, up: { str: 0, skl: 0, end: 0, hoard: 0 }, seen: {}, best: 0, runs: 0, fought: 0, timing: true, layout: "auto" };
 }
+/**
+ * Legacy as any earlier version saved it, with whatever is missing or impossible put right,
+ * so nothing odd in the browser's storage can stop the game from starting.
+ */
+export function soundLegacy(saved: unknown): Legacy {
+  const obj = (v: unknown) => (typeof v === "object" && v !== null && !Array.isArray(v) ? (v as Record<string, unknown>) : {});
+  const count = (v: unknown, most = Infinity) => (typeof v === "number" && Number.isFinite(v) && v > 0 ? Math.min(most, Math.floor(v)) : 0);
+  const s = obj(saved), up = obj(s.up);
+  return {
+    pts: count(s.pts), best: count(s.best), runs: count(s.runs), fought: count(s.fought),
+    up: { str: count(up.str, 3), skl: count(up.skl, 3), end: count(up.end, 3), hoard: count(up.hoard, 3) },
+    seen: Object.fromEntries(Object.entries(obj(s.seen)).filter(([, v]) => v === true)) as Record<string, boolean>,
+    timing: s.timing !== false,
+    layout: s.layout === "phone" || s.layout === "desktop" ? s.layout : "auto",
+  };
+}
 export function loadLegacy(): void {
-  const saved = store.load<Partial<Legacy>>(KEYS.legacy) || {};
-  const d = defaultLegacy();
-  st.L = { ...d, ...saved, up: { ...d.up, ...(saved.up || {}) }, seen: saved.seen || {} };
-  if (st.L.timing === undefined) st.L.timing = true;
+  st.L = soundLegacy(store.load<unknown>(KEYS.legacy));
 }
 export const keepLegacy = () => store.save(KEYS.legacy, st.L);
 export function saveRun(): void {
@@ -50,6 +63,8 @@ export const crewAll = (): Crew[] => [...g().crew.L, ...g().crew.R];
 export const exposed = () => (g().crew.L.length ? 0 : 1) + (g().crew.R.length ? 0 : 1);
 export const hurt = (n: number) => { g().hp -= n; };
 export const cap = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
+/** "an ash spear", "a bearded axe". */
+export const withArticle = (w: string) => (/^[aeiou]/i.test(w) ? "an " : "a ") + w;
 export const randomName = () => pick(NAMES) + " " + pick(FATHERS) + "son";
 
 export function say(t: string, c: LogClass = ""): void {

@@ -2,11 +2,13 @@
  * Save codes: the whole save (legacy and any saga in progress) as text a player can copy,
  * to keep a backup or carry on playing on another device. A code is checked field by field
  * before it is used, so a damaged or edited code is refused instead of breaking the game.
+ * The saga kept in the browser goes through the same checks when it is loaded (checkLocalRun).
  * No browser-only code here, so the tests can run it.
  */
-import type { Battle, Game, Legacy } from "../types";
-import { ARMOUR, CH, EVENT_BY_ID, RANKS, WEAPONS, WOUNDS } from "../content/tables";
+import type { Battle, Game, IntentId, Legacy } from "../types";
+import { ARMOUR, CH, EVENT_BY_ID, FOE_KINDS, INTENTS, RANKS, WEAPONS, WOUNDS } from "../content/tables";
 import { SAVE_VERSION } from "../save/storage";
+import { PROMPTS } from "./combat";
 
 export interface SavedRun { v: number; G: Game; B: Battle | null }
 export interface SaveBundle { legacy: Legacy; run: SavedRun | null }
@@ -88,9 +90,13 @@ function checkLegacy(x: unknown): Legacy {
 const PHASES = ["camp", "battle", "aftermath", "hunt", "finale"];
 const LOG_CLASSES = ["", "head", "good", "bad"];
 
+/** Fields an older save may lack, with the value they had before the field existed. */
+const olderDefaults = (): Obj => ({ nid: false, eye: false, jarl: false, mid: false, ev: null, lastEv: null, acts: 0, used: [], f: {}, wounds: [] });
+
+/** A saga with every field present and possible. Throws SaveCodeError otherwise. */
 function checkGame(x: unknown): Game {
   need(isObj(x));
-  const G = x as Obj;
+  const G: Obj = { ...olderDefaults(), ...(x as Obj) };
   need(isStr(G.name, 60) && isInt(G.ch, 0, CH.length - 1) && PHASES.includes(G.phase as string));
   for (const k of ["str", "skl", "end", "hp", "mor", "rep", "silver", "kills", "acts"]) need(isNum(G[k]));
   need(isInt(G.wp, 0, WEAPONS.length - 1) && isInt(G.ar, 0, ARMOUR.length - 1) && isInt(G.rank, 0, RANKS.length - 1));
@@ -108,10 +114,52 @@ function checkGame(x: unknown): Game {
   need((G.loot === undefined || isNum(G.loot)) && (G.gift === undefined || isNum(G.gift)));
   const game = { ...G } as unknown as Game;
   delete game.res;
-  // A saga saved mid-battle or mid-hunt picks up in camp, just before that fight.
-  if (game.phase === "battle") { game.phase = "camp"; game.acts = 0; game.ev = null; }
-  if (game.phase === "hunt") game.phase = "camp";
   return game;
+}
+
+/** A saga without its battle picks up in camp, just before that fight. */
+function backToCamp(game: Game): Game {
+  if (game.phase === "battle") { game.phase = "camp"; game.acts = 0; game.ev = null; }
+  return game;
+}
+
+/** A battle in progress, if every part of it is sound; otherwise null, and the fight starts again. */
+function checkBattle(x: unknown): Battle | null {
+  if (!isObj(x)) return null;
+  const B = x, foes = B.foes;
+  const sound = Array.isArray(foes) && foes.length > 0 && foes.length <= 12
+    && foes.every((f) => isObj(f) && isStr(f.n, 60) && isNum(f.hp) && isNum(f.mx) && f.mx > 0 && isNum(f.atk) && isNum(f.df)
+      && isBool(f.champ) && (f.kind === undefined || (isStr(f.kind) && f.kind in FOE_KINDS)))
+    && isInt(B.i, 0, foes.length - 1)
+    && [B.sta, B.kills, B.round, B.line, B.prompts].every(isNum)
+    && Array.isArray(B.lost) && B.lost.every((n) => isStr(n, 60))
+    && [B.broken, B.champKilled, B.opened, B.read].every(isBool)
+    && isStr(B.intent) && B.intent in INTENTS
+    && (B.shown === undefined || (isStr(B.shown) && B.shown in INTENTS))
+    && [B.feint, B.seen].every((v) => v === undefined || isBool(v))
+    && (B.prompt === null || B.prompt === undefined || (isStr(B.prompt) && B.prompt in PROMPTS && (B.prompt !== "cover" || isStr(B.pn, 60))))
+    && (B.flash === undefined || isStr(B.flash, 200));
+  if (!sound) return null;
+  return { ...(B as unknown as Battle), shown: (B.shown ?? B.intent) as IntentId, feint: B.feint === true, seen: B.seen === true,
+    prompt: (B.prompt ?? null) as string | null, flash: (B.flash ?? "") as string, swing: null };
+}
+
+/**
+ * The saga kept in this browser, as read from storage. Returns null when it cannot be used.
+ * Unlike a save code, a battle in progress is kept when it is sound and was saved by this version.
+ */
+export function checkLocalRun(x: unknown): SavedRun | null {
+  try {
+    if (!isObj(x)) return null;
+    const G = checkGame(x.G);
+    const B = G.phase === "battle" && x.v === SAVE_VERSION ? checkBattle(x.B) : null;
+    if (!B) backToCamp(G);
+    // A hunt cannot be resumed: back to camp with the action returned.
+    if (G.phase === "hunt") { G.phase = "camp"; G.acts++; }
+    return { v: SAVE_VERSION, G, B };
+  } catch {
+    return null;
+  }
 }
 
 function checkBundle(x: unknown): SaveBundle {
@@ -120,7 +168,10 @@ function checkBundle(x: unknown): SaveBundle {
   let run: SavedRun | null = null;
   if (x.run !== null && x.run !== undefined) {
     need(isObj(x.run));
-    run = { v: SAVE_VERSION, G: checkGame((x.run as Obj).G), B: null };
+    // A code carries no battle: a saga saved mid-battle or mid-hunt picks up in camp.
+    const G = backToCamp(checkGame((x.run as Obj).G));
+    if (G.phase === "hunt") G.phase = "camp";
+    run = { v: SAVE_VERSION, G, B: null };
   }
   return { legacy, run };
 }

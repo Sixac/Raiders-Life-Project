@@ -1,26 +1,22 @@
 /* Every button runs one of these by name (see btn() in html.ts). The page re-renders after each. */
-import type { Game, Battle, PerkId } from "../types";
+import type { PerkId } from "../types";
 import { KEYS, SAVE_VERSION, store } from "../save/storage";
+import { readSaved } from "../save/local";
 import { keepLegacy, loadLegacy, st } from "../core/state";
 import { act, loose, newGame } from "../core/camp";
 import { choose } from "../core/events";
 import { answer, loot, march, release, turn } from "../core/combat";
 import { crossSea, ending } from "../core/endings";
-import { decodeSave, encodeSave, SaveCodeError, type SaveBundle } from "../core/savecode";
+import { decodeSave, encodeSave, SaveCodeError, type SaveBundle, type SavedRun } from "../core/savecode";
 import { sagaSummary } from "../core/summary";
 import { canonicalUrl, canShareSheet, copyText } from "./share";
 import { freshUiName, ui, type Tab } from "./ui-state";
 import { LAYOUTS } from "./layout";
-import { render } from "./render";
+import { fail, NUMBER_KEY_PHASES, render } from "./render";
 
-interface SavedRun { v?: number; G: Game; B: Battle | null }
-
-/** Load a saved run, repairing anything an older version of the game could not resume. */
+/** Take up a saved run. It has already been checked and repaired (see checkLocalRun). */
 export function loadRun(s: SavedRun): void {
-  st.G = s.G; st.B = s.B || null; st.H = null;
-  if (s.v !== SAVE_VERSION && st.B) { st.B = null; if (st.G.phase === "battle") { st.G.phase = "camp"; st.G.acts = 0; } }
-  if (st.B) st.B.swing = null;
-  if (st.G.phase === "hunt") { st.G.phase = "camp"; st.G.acts++; }
+  st.G = s.G; st.B = s.B; st.H = null;
 }
 
 const ACTIONS: Record<string, (...args: never[]) => unknown> = {
@@ -29,20 +25,21 @@ const ACTIONS: Record<string, (...args: never[]) => unknown> = {
   dismiss: (k: string) => { st.L.seen[k] = true; keepLegacy(); },
   toggleTiming: () => { st.L.timing = !st.L.timing; keepLegacy(); },
   cycleLayout: () => { st.L.layout = LAYOUTS[(LAYOUTS.indexOf(st.L.layout) + 1) % LAYOUTS.length]; keepLegacy(); },
-  tab: (t: Tab) => { ui.tab = t; window.scrollTo(0, 0); },
+  tab: (t: Tab) => { ui.tab = t; ui.help = false; window.scrollTo(0, 0); },
+  help: () => { ui.help = !ui.help; window.scrollTo(0, 0); },
+  dismissProblem: () => { ui.problem = ""; },
+  eraseRun: () => { store.remove(KEYS.run); ui.problem = ""; },
   up: (k: PerkId) => { const L = st.L; if (L.pts < 3 || L.up[k] >= 3) return; L.pts -= 3; L.up[k]++; keepLegacy(); },
   reroll: () => { freshUiName(); },
-  continueRun: () => { const s = store.load<SavedRun>(KEYS.run); if (s?.G) { loadRun(s); Object.assign(ui, { tab: "saga", recent: 0, saveMsg: "" }); } },
+  continueRun: () => { const { run } = readSaved(); if (run) { loadRun(run); Object.assign(ui, { tab: "saga", recent: 0, saveMsg: "", problem: "" }); } },
   begin: () => {
-    const saved = store.load<SavedRun>(KEYS.run);
-    if (saved?.G && saved.G.phase !== "over" && !ui.confirmNew) { ui.confirmNew = true; return; }
+    if (readSaved().run && !ui.confirmNew) { ui.confirmNew = true; return; }
     ui.confirmNew = false;
-    Object.assign(ui, { tab: "saga", saveMsg: "", shareMsg: "", shareText: "" });
+    Object.assign(ui, { tab: "saga", saveMsg: "", shareMsg: "", shareText: "", problem: "" });
     newGame(ui.name);
   },
   copySave: () => {
-    const saved = store.load<SavedRun>(KEYS.run);
-    const bundle: SaveBundle = { legacy: st.L, run: saved?.G ? { v: saved.v ?? SAVE_VERSION, G: saved.G, B: saved.B ?? null } : null };
+    const bundle: SaveBundle = { legacy: st.L, run: readSaved().run };
     const code = encodeSave(bundle);
     Object.assign(ui, { saveMsg: "", saveCode: "" });
     return copyText(code).then(async (ok) => {
@@ -81,7 +78,7 @@ const ACTIONS: Record<string, (...args: never[]) => unknown> = {
   toMenu: () => {
     if (st.G && st.G.phase !== "over") store.save(KEYS.run, { v: SAVE_VERSION, G: st.G, B: st.B ? { ...st.B, swing: null } : null });
     st.G = null; st.B = null; st.H = null;
-    Object.assign(ui, { shareMsg: "", shareText: "" });
+    Object.assign(ui, { shareMsg: "", shareText: "", help: false });
   },
 };
 
@@ -89,11 +86,13 @@ export function run(name: string, args: unknown[] = []): void {
   const fn = ACTIONS[name] as ((...a: unknown[]) => unknown) | undefined;
   if (!fn) return;
   const actsBefore = st.G?.acts;
-  const result = fn(...args);
+  let result: unknown;
+  // A rule that throws must not leave a page that no longer answers: go back to the title screen.
+  try { result = fn(...args); } catch (e) { fail(e); return; }
   // Copying, sharing and save codes finish a moment later; draw again when they do.
   if (result instanceof Promise) result.finally(render);
   // Close a camp sub-menu once an action has been used up, or on anything other than a tip.
-  if (name === "act" ? st.G?.acts !== actsBefore : !["sub", "dismiss", "tab", "cycleLayout", "toggleTiming"].includes(name)) ui.sub = null;
+  if (name === "act" ? st.G?.acts !== actsBefore : !["sub", "dismiss", "tab", "cycleLayout", "toggleTiming", "help"].includes(name)) ui.sub = null;
   render();
 }
 
@@ -120,8 +119,17 @@ export function bindInput(): void {
     if (t.id === "importCode") ui.importText = t.value;
   });
   document.addEventListener("keydown", (e) => {
+    if (["INPUT", "TEXTAREA"].includes((e.target as HTMLElement).tagName) || e.ctrlKey || e.metaKey || e.altKey) return;
+    // The question mark opens and closes the How to play page; Escape closes it.
+    if (e.key === "?" || (e.key === "Escape" && ui.help)) { e.preventDefault(); run("help"); return; }
     const G = st.G;
-    if (!G || (e.target as HTMLElement).tagName === "INPUT" || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (!G || ui.help) return;
+    // In camp, at the hoard and at an ending, number keys pick from the choices on screen and 0 marches.
+    if (NUMBER_KEY_PHASES.includes(G.phase) && /^[0-9]$/.test(e.key)) {
+      const el = e.key === "0" ? document.querySelector<HTMLButtonElement>("main .march .btn") : document.querySelectorAll<HTMLButtonElement>("main .actions .btn")[Number(e.key) - 1];
+      if (el && !el.disabled) { e.preventDefault(); el.click(); }
+      return;
+    }
     const go = e.key === " " || e.key === "Enter";
     if (G.phase === "hunt" && st.H && go) { e.preventDefault(); run("loose"); return; }
     const B = st.B;

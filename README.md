@@ -4,9 +4,16 @@ A permadeath roguelite RPG about one ordinary raider of the Great Heathen Army, 
 
 **Play it in your browser at [sixac.github.io/Raiders-Life-Project](https://sixac.github.io/Raiders-Life-Project/).**
 
+<p>
+  <img src="docs/camp.png" alt="Camp at Reading in 870: a painted scene, the camp actions, the raider’s sheet and the start of the map" width="49%">
+  <img src="docs/battle.png" alt="The battle at Saucourt: the enemy’s next move, the answers to it and the shield-wall" width="49%">
+</p>
+
 Each of the sixteen chapters is a camp (train, feast, rest, hunt, buy gear, make offerings, deal with events) followed by a shield-wall battle (read the enemy’s move, time your blows, push their wall back). Death is permanent; points from finished runs buy starting bonuses for the next raider.
 
-It plays on phones too: below 720 pixels wide it switches to a phone layout with large buttons, a status bar at the top and tabs at the bottom. Players can force either layout under Settings. On the public site it can also be added to a phone’s home screen and played offline.
+It plays on phones too: on a narrow screen, or a short one such as a phone held sideways, it switches to a phone layout with large buttons, a status bar at the top and tabs at the bottom. Players can force either layout under Settings. On the public site it can also be added to a phone’s home screen and played offline.
+
+The rules are explained in the game, on the How to play page. On a keyboard, number keys pick from the choices on screen and the question mark opens that page.
 
 ## AI Notice
 
@@ -42,9 +49,12 @@ src/
     endings.ts      endings, score, legacy points, the skald’s verse
     savecode.ts     save codes: turning a save into text and checking codes before loading them
     summary.ts      the one-line saga players can share
-  save/storage.ts   where saves go (see "Saves" below)
+  save/
+    storage.ts      where saves go (see "Saves" below)
+    local.ts        reads the saga kept in the browser, after checking it
   ui/               everything that touches the page
     render.ts       all screens, desktop and phone
+    help.ts         the How to play page, built from the tuning tables
     layout.ts       picks the desktop or phone layout
     scenes.ts       the painted chapter scenes, drawn as SVG
     actions.ts      button and keyboard handling
@@ -59,8 +69,11 @@ tests/
   savecode.test.ts  save codes round-trip, and damaged or invalid codes are refused
   summary.test.ts   the line players share at the end
   html.test.ts      names and other text are shown as typed, never as markup
+  state.test.ts     whatever is in the browser’s storage, the game still starts
+  help.test.ts      the How to play page leaves out no move, rank or god
   simulate.test.ts  plays thousands of runs with bots and checks the balance
   sim.ts            the bot and the balance report
+docs/               the screenshots at the top of this page
 ```
 
 ## Writing events
@@ -120,6 +133,8 @@ Most of the numbers you would want to change are in `src/content/tables.ts`: ran
 
 `npm run balance` plays 7,500 runs with bots and prints a report for each kind of player: careful players (who answer the enemy's moves) with poor, average and skilled timing or timing turned off, and careless players. For each it shows how many survive to 900, where the rest die, when each rank is first reached, silver and reputation at the end, and which ending would score best.
 
+The How to play page (`src/ui/help.ts`) is built from the same tables, so it follows most changes by itself. The few numbers written out there by hand come from formulas in the rules, and the comments in that file say which.
+
 The test fails when a change tips the game too far, for example if a careful player with average timing survives to 900 less than 15% or more than 45% of the time, if timing decides too much, if the top ranks come before Edington, or if one ending is best for nearly everyone. The limits are in `tests/simulate.test.ts`; the bot is in `tests/sim.ts`.
 
 ## The public site
@@ -127,11 +142,14 @@ The test fails when a change tips the game too far, for example if a careful pla
 - **No outside requests.** The fonts (Alegreya and Uncial Antiqua, both under the SIL Open Font License) are bundled into the page from the `@fontsource` packages, so visitors’ browsers never contact Google or anyone else. That also avoids the GDPR problem of loading Google Fonts from Google’s servers.
 - **Link previews.** `index.html` has a description and Open Graph tags, so links shared on Discord, Reddit or in messages show the title, a line of text and `public/preview.png`. If the game moves to another address, change `og:url` and `og:image` there; the share button uses `og:url` too.
 - **Offline and installable.** On the https site, `public/sw.js` keeps a copy of the game so it starts without a connection once it has been opened, and `public/manifest.webmanifest` lets phones add it to the home screen. The worker fetches from the network first, so players get new versions as soon as they are online. If you change the list of files it caches, change `CACHE` in `sw.js` so old copies are cleared.
+- **Version.** The foot of the title screen shows the `version` from `package.json`, with links to the source and to the page for reporting problems. Raise the version with each release.
 - **Sharing.** The end screen has a “Share your saga” button: on phones it opens the share sheet, elsewhere it copies a line such as “Ketil Ormsson, hersir, sailed home with 260 silver in 900. Saga score 309.” with a link to the game.
 
 ## Saves
 
 Saves live in the player’s browser. On the title screen, **Copy save code** turns the legacy and any saga in progress into a short code (compressed, about 600 characters) that can be kept as a backup or pasted into **Load a save code** on another device. Codes are checked field by field before loading, so a damaged or edited code is refused with a message instead of breaking the game; a saga saved in the middle of a battle resumes in camp just before it.
+
+The saga kept in the browser goes through the same checks every time it is read. If it is damaged, or an update can no longer continue it, the title screen says so instead of offering a “Continue” button that does nothing. If something goes wrong during play, the game returns to the title screen with a message, and the last save made before the problem is still there.
 
 Everything saved goes through the `SaveStore` interface in `src/save/storage.ts`. In the browser that is `localStorage` (the same keys as the original single-file game, so existing saves carry over). For a desktop build, write a `SaveStore` that reads and writes files and call `useStore(new YourStore())` at the top of `src/main.ts`, before `loadLegacy()`.
 

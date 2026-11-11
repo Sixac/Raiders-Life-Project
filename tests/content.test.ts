@@ -1,6 +1,7 @@
 /* Checks the data files, so a typo in events.json or chapters.json fails here instead of in play. */
 import { describe, expect, it } from "vitest";
 import { CH, EVENTS, FINALES, FOE_KINDS, WOUNDS } from "../src/content/tables";
+import { namesHisLord, theFoe } from "../src/core/combat";
 import type { Cond, Outcome } from "../src/types";
 
 const STATS = ["str", "skl", "end", "fight"];
@@ -40,6 +41,14 @@ describe("chapters", () => {
     }
   });
   it("ends at a finale", () => expect(FINALES).toContain(CH.length - 1));
+  it("names enemies so they read right in a sentence", () => {
+    expect(theFoe({ n: "Mercian spearman" })).toBe("the Mercian spearman");
+    expect(theFoe({ n: "king’s thegn" })).toBe("the king’s thegn");
+    expect(theFoe({ n: "Louis’s champion" })).toBe("Louis’s champion");
+    expect(theFoe({ n: "Count Odo’s retainer" })).toBe("Count Odo’s retainer");
+    // Ordinary enemies follow "Another", which a name like "Edward’s raider" cannot.
+    for (const c of CH) expect(namesHisLord(c.foes[0]), `${c.place}: "Another ${c.foes[0]}"`).toBe(false);
+  });
 });
 
 describe("events", () => {
