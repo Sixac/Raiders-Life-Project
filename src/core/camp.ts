@@ -1,8 +1,8 @@
 /* A new run, camp actions, the hunting minigame and moving on between chapters. */
 import type { BoonId, GodId, Stat } from "../types";
-import { ARMOUR, BOON_EFFECT, BOONS, CH, EVENT_BY_ID, FRANKISH_FROM, GIFT, GODS, HIRE, RANKS, STATS, TRAINING, WEAPONS, WOUNDS } from "../content/tables";
+import { ARMOUR, BOON_EFFECT, BOONS, CH, CREW_KIT, CREW_KITS, EVENT_BY_ID, FRANKISH_FROM, GIFT, GODS, HEALER, HIRE, RANKS, RINGS, STATS, TRAINING, WEAPONS, WOUNDS, type Gear } from "../content/tables";
 import { cl, pct, R } from "./random";
-import { age, carries, eSkl, g, hurt, listOf, maxhp, mkCrew, randomName, say, st, withArticle } from "./state";
+import { age, carries, crewAll, eSkl, g, hurt, listOf, maxhp, mkCrew, randomName, say, st, withArticle } from "./state";
 import { addWound, fix, wallCap } from "./life";
 import { drawEvent } from "./events";
 
@@ -29,7 +29,7 @@ export function newGame(name?: string): void {
 
 export function startCamp(): void {
   const G = g();
-  G.phase = "camp"; G.acts = RANKS[G.rank].acts; G.jarl = false;
+  G.phase = "camp"; G.acts = RANKS[G.rank].acts; G.jarl = false; G.healed = false;
   const c = CH[G.ch];
   say(`${c.year}: ${c.title}`, "head");
   G.hp = Math.min(maxhp(), G.hp + 6 + G.gods.freyr * 2 + (carries("herbs") ? BOON_EFFECT.herbs : 0));
@@ -57,15 +57,23 @@ function spend(): void {
 /** Chance that training raises a stat: it gets harder as the stat grows (see TRAINING). */
 export const trainP = (s: Stat) => { const v = g()[s]; return TRAINING.chance.find((c) => v < c.below)?.pct ?? 0; };
 
-export function smithItems() {
-  const G = g();
+/** The next step of kit a captain can buy for his men, or null: [name, step, price]. */
+export function nextKit(): Gear | null {
+  const G = g(), step = (G.kit ?? 0) + 1;
+  return G.rank >= CREW_KIT.rank && step < CREW_KITS.length ? [CREW_KITS[step][0], step, CREW_KITS[step][1]] : null;
+}
+
+/** What the smith has for sale: better weapons and armour for you (w, a) and, for a captain, kit for his men (k). */
+export function smithItems(): { t: "w" | "a" | "k"; i: number; w: Gear }[] {
+  const G = g(), kit = nextKit();
   return [
     ...WEAPONS.map((w, i) => ({ t: "w" as const, i, w })).filter((o) => o.i > G.wp && (o.i < 4 || G.ch >= FRANKISH_FROM)),
     ...ARMOUR.map((w, i) => ({ t: "a" as const, i, w })).filter((o) => o.i > G.ar),
+    ...(kit ? [{ t: "k" as const, i: kit[1], w: kit }] : []),
   ];
 }
 
-export type CampAction = "train" | "feast" | "rest" | "gift" | "hire" | "offer" | "drill" | "forage" | "buy";
+export type CampAction = "train" | "feast" | "rest" | "gift" | "hire" | "heal" | "rings" | "offer" | "drill" | "forage" | "buy";
 
 /** The side of the wall a new man joins: the shorter one, or null if both are full. */
 export function hireSide(): "L" | "R" | null {
@@ -74,7 +82,7 @@ export function hireSide(): "L" | "R" | null {
 }
 
 /** Purchases made in passing: they cost silver but no camp action, so they never compete with training. */
-export const QUICK: CampAction[] = ["gift", "hire"];
+export const QUICK: CampAction[] = ["gift", "hire", "heal", "rings"];
 
 export function act(k: CampAction, x?: string): void {
   const G = g();
@@ -120,6 +128,19 @@ export function act(k: CampAction, x?: string): void {
       say(`${c.n}, a free Dane with his own shield, joins your part of the wall for a share of the loot. Silver −${HIRE.price}.`);
       return;
     }
+    case "heal":
+      // G.healed marks that the healer has been paid this camp.
+      if (G.healed || G.silver < HEALER.price || G.hp >= maxhp()) return;
+      G.healed = true; G.silver -= HEALER.price; G.hp += HEALER.hp;
+      say(`A healer washes your hurts with boiled herbs and binds them clean. Health +${HEALER.hp}, silver −${HEALER.price}.`);
+      fix();
+      return;
+    case "rings":
+      // G.rings lasts until the coming battle is over.
+      if (G.rank < RINGS.rank || G.rings || G.nid || G.silver < RINGS.price) return;
+      G.rings = true; G.silver -= RINGS.price; G.rep += RINGS.rep;
+      say(`You break arm-rings and share the silver among your men. They will fight hard for a generous lord. Reputation +${RINGS.rep}, silver −${RINGS.price}.`);
+      return;
     case "offer": {
       const god = x as GodId;
       if (G.silver < 2 || G.gods[god] >= 3) return;
@@ -147,6 +168,15 @@ export function act(k: CampAction, x?: string): void {
       return;
     case "buy": {
       const kind = x![0], i = Number(x!.slice(1));
+      if (kind === "k") {
+        // Kit for the men beside you: every one of them, now and later, is that much harder to kill.
+        const kit = nextKit();
+        if (!kit || kit[1] !== i || G.silver < kit[2]) return;
+        G.silver -= kit[2]; G.kit = i;
+        crewAll().forEach((m) => { m.mx += CREW_KIT.hp; m.hp += CREW_KIT.hp; });
+        say(`The smith fits out your men with ${kit[0]}. Their health +${CREW_KIT.hp}, silver −${kit[2]}.`);
+        return spend();
+      }
       const item = (kind === "w" ? WEAPONS : ARMOUR)[i];
       if (!item || G.silver < item[2]) return;
       if (kind === "w" && i >= 4 && G.ch < FRANKISH_FROM) return;

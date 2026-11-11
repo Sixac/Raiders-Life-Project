@@ -4,7 +4,7 @@
  * core/combat.ts, core/camp.ts and core/state.ts; change them here if you change them there.
  * No browser code, so the tests can read the page.
  */
-import { BOON_PRICES, BOON_SLOTS, BOONS, COST, FEINTS, FOE_KINDS, GIFT, GODS, HIRE, INTENTS, RANKS, STATS, SWING, TRAINING } from "../content/tables";
+import { BOON_PRICES, BOON_SLOTS, BOONS, COST, CREW_KIT, FEINTS, FOE_KINDS, GIFT, GODS, HEALER, HIRE, INTENTS, RANKS, RINGS, STATS, SWING, TRAINING } from "../content/tables";
 import type { BoonId, GodId, IntentId, Stat } from "../types";
 
 const pct = (n: number) => `${n > 0 ? "+" : "−"}${Math.abs(n)}%`;
@@ -36,7 +36,8 @@ export function helpHtml(phone: boolean): string {
       <dt>Train</dt><dd>Costs ${TRAINING.morale} morale. It ${easy.pct >= 100 ? "always works" : `works ${easy.pct}% of the time`} while the stat is below ${easy.below}, then ${mid.pct}% of the time below ${mid.below} and ${hard.pct}% below ${hard.below}.</dd>
       <dt>Feast, rest, forage</dt><dd>Feasting and fishing raise morale. Resting heals you and mends your worst wound a little. Hunting and raiding are gambles.</dd>
       <dt>The smith</dt><dd>Each better weapon adds 2 damage and 2% to hit. Each better armour makes enemies hit you 5% less often.</dd>
-      <dt>The jarl and your men</dt><dd>A gift to the jarl (${GIFT.price} silver) earns ${GIFT.rep} reputation once each camp, and a hired spearman (${HIRE.price} silver) stands beside you in the wall. Neither uses an action.</dd>
+      <dt>The healer</dt><dd>${HEALER.price} silver buys ${HEALER.hp} health once each camp, without using an action.</dd>
+      <dt>The jarl and your men</dt><dd>A gift to the jarl (${GIFT.price} silver) earns ${GIFT.rep} reputation once each camp, and a hired spearman (${HIRE.price} silver) stands beside you in the wall. Neither uses an action. A ${RANKS[CREW_KIT.rank].n.toLowerCase()} can buy kit for his men at the smith: each step adds ${CREW_KIT.hp} health to every man beside him. A ${RANKS[RINGS.rank].n.toLowerCase()} can give them rings before a battle (${RINGS.price} silver), and they strike more often in it.</dd>
       <dt>Offerings</dt><dd>Each raises a god’s favour by one, up to three, and every favour fades by one each chapter. With no favour at all you may lose heart.</dd>
       ${gods}
     </dl>
@@ -59,7 +60,7 @@ export function helpHtml(phone: boolean): string {
     <dl>${ranks}</dl>
 
     <h3>Silver and endings</h3>
-    <p>After a battle the hoard is shared out by rank, and the jarl adds a gift for your own kills. Skimming doubles your share if nobody sees you. After Edington in 878 you may end your saga or cross the sea, and after the last battle of 900 you choose your ending: baptism rewards reputation, sailing home rewards silver, and land at York rewards rank and kills.</p>
+    <p>After a battle the hoard is shared out by rank, and the jarl adds a gift for your own kills. Skimming doubles your share if nobody sees you. After Edington in 878 you may end your saga or cross the sea, and after the last battle of 900 you choose your ending: baptism rewards reputation, sailing home rewards the silver you kept, and land at York rewards rank and kills. Silver spent on your men, the healer and the jarl helps you live to see an ending, but it does not sail home with you.</p>
     <h3>Legacy</h3>
     <p>Every saga earns one legacy point for each five points of its score, however it ends. On the title screen the points buy gifts. A gift stays for every raider after, and each costs more than the last, from ${BOON_PRICES[0]} points to ${BOON_PRICES[BOON_PRICES.length - 1]}. One raider carries ${number[BOON_SLOTS.base]} of them, or ${number[BOON_SLOTS.most]} once you have bought the place for another (${BOON_SLOTS.price} points).</p>
     <dl>${gifts}</dl>

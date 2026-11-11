@@ -6,7 +6,7 @@
  * No browser-only code here, so the tests can run it.
  */
 import type { Battle, Game, IntentId, Legacy } from "../types";
-import { ARMOUR, BOON_SLOTS, BOONS, CH, EVENT_BY_ID, FOE_KINDS, INTENTS, RANKS, WEAPONS, WOUNDS } from "../content/tables";
+import { ARMOUR, BOON_SLOTS, BOONS, CH, CREW_KITS, EVENT_BY_ID, FOE_KINDS, INTENTS, RANKS, WEAPONS, WOUNDS } from "../content/tables";
 import { soundLegacy } from "./state";
 import { SAVE_VERSION } from "../save/storage";
 import { PROMPTS } from "./combat";
@@ -113,6 +113,7 @@ function checkGame(x: unknown): Game {
   need(isObj(G.f) && Object.values(G.f as Obj).every(isNum));
   need(Array.isArray(G.used) && G.used.every((u) => isStr(u)));
   need(G.boons === undefined || isGifts(G.boons));
+  need((G.kit === undefined || isInt(G.kit, 0, CREW_KITS.length - 1)) && [G.healed, G.rings].every((v) => v === undefined || isBool(v)));
   need(G.at === undefined || (isObj(G.at) && Object.values(G.at).every((ch) => isInt(ch, 0, CH.length - 1))));
   need(Array.isArray(G.log) && G.log.every((l) => isObj(l) && isStr(l.t, 2000) && LOG_CLASSES.includes(l.c as string)));
   const crew = G.crew as Obj;

@@ -1,6 +1,6 @@
 /* The single mutable game state, plus the helpers everything else derives from it. */
 import type { Battle, BoonId, Crew, Game, Hunt, Legacy, LogClass, WoundId } from "../types";
-import { BOON_EFFECT, BOON_PRICES, BOON_SLOTS, BOONS, CH, ENEMIES, FATHERS, NAMES } from "../content/tables";
+import { BOON_EFFECT, BOON_PRICES, BOON_SLOTS, BOONS, CH, CREW_KIT, ENEMIES, FATHERS, NAMES } from "../content/tables";
 import { KEYS, SAVE_VERSION, store } from "../save/storage";
 import { cl, pick } from "./random";
 
@@ -118,4 +118,6 @@ export function freshName(): string {
   const free = NAMES.filter((n) => !used.has(n));
   return free.length ? pick(free) : pick(NAMES) + " the Younger";
 }
-export const mkCrew = (n?: string, mx = 10): Crew => ({ n: n || freshName(), hp: mx, mx });
+/** Health the captain's kit adds to each man beside him. */
+export const kitHp = () => (st.G?.kit ?? 0) * CREW_KIT.hp;
+export const mkCrew = (n?: string, mx = 10): Crew => ({ n: n || freshName(), hp: mx + kitHp(), mx: mx + kitHp() });

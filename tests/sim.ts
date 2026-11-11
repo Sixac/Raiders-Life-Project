@@ -10,14 +10,20 @@
 import type { Action, BoonId, Quality } from "../src/types";
 import { MemoryStore, useStore } from "../src/save/storage";
 import { maxhp, st } from "../src/core/state";
-import { act, hireSide, newGame } from "../src/core/camp";
+import { act, hireSide, newGame, nextKit } from "../src/core/camp";
 import { choose, eligibleEvents, optionEnabled } from "../src/core/events";
 import { answer, loot, march, resolve, turn, visibleIntent } from "../src/core/combat";
 import { crossSea, ending, ENDINGS } from "../src/core/endings";
-import { ARMOUR, ATTACKS, CH, COST, EDINGTON, EVENT_BY_ID, EVENTS, FRANKISH_FROM, GIFT, HIRE, INTENTS, RANKS, WEAPONS } from "../src/content/tables";
+import { ARMOUR, ATTACKS, CH, COST, EDINGTON, EVENT_BY_ID, EVENTS, FRANKISH_FROM, GIFT, HEALER, HIRE, INTENTS, RANKS, RINGS, WEAPONS } from "../src/content/tables";
 
 export type Timing = "off" | "poor" | "average" | "skilled";
-export interface Profile { careful: boolean; timing: Timing; stories?: boolean; /** Legacy gifts every raider of this bot carries. */ boons?: BoonId[] }
+export interface Profile {
+  careful: boolean; timing: Timing; stories?: boolean;
+  /** Legacy gifts every raider of this bot carries. */
+  boons?: BoonId[];
+  /** Keeps his silver to sail home rich: he buys his own gear and hires men, but pays for no healer, rings, gifts or kit. */
+  thrifty?: boolean;
+}
 
 /** The first event of each story: one that later events follow and that follows nothing itself. */
 export const STORY_OPENERS = [...new Set(EVENTS.filter((e) => e.after).map((e) => {
@@ -70,20 +76,30 @@ function swingQuality(t: Timing): Quality {
   return r < p.perfect ? "perfect" : r < p.perfect + p.poor ? "poor" : "good";
 }
 
-/** Camp: buy gear, spend spare silver on men and the jarl (no action needed), then heal, eat and train. */
-function campStep(): void {
+/**
+ * Camp: buy gear, then kit for the men; spend spare silver on men, the jarl, the healer and rings
+ * (none of which needs an action); then heal, eat and train.
+ */
+function campStep(thrifty = false): void {
   const G = st.G!;
-  const nw = WEAPONS[G.wp + 1], na = ARMOUR[G.ar + 1];
-  const nextGear = Math.min(na ? na[2] : Infinity, nw && (G.wp + 1 < 4 || G.ch >= FRANKISH_FROM) ? nw[2] : Infinity);
+  const nw = WEAPONS[G.wp + 1], na = ARMOUR[G.ar + 1], kit = thrifty ? null : nextKit();
+  const ownGear = Math.min(na ? na[2] : Infinity, nw && (G.wp + 1 < 4 || G.ch >= FRANKISH_FROM) ? nw[2] : Infinity);
+  // Silver is kept back for the next thing at the smith: the raider's own gear first, then his men's.
+  const nextGear = Number.isFinite(ownGear) ? ownGear : kit ? kit[2] : Infinity;
   const spare = G.silver - (G.acts > 0 && Number.isFinite(nextGear) ? nextGear : 0);
   if (G.rank >= 1 && hireSide() && spare >= HIRE.price) return act("hire");
-  if (!G.jarl && !G.nid && spare >= GIFT.price) return act("gift");
+  if (!thrifty) {
+    if (!G.jarl && !G.nid && spare >= GIFT.price) return act("gift");
+    if (!G.healed && G.hp < maxhp() * 0.75 && spare >= HEALER.price) return act("heal");
+    if (G.rank >= RINGS.rank && !G.rings && !G.nid && spare >= RINGS.price) return act("rings");
+  }
   if (G.acts < 1) return march();
   if (G.hp < maxhp() * 0.75) act("rest");
   else if (G.mor < 45 && G.silver >= 3) act("feast");
   else if (G.mor < 35) act("forage", "fish");
   else if (na && G.silver >= na[2] && G.ar <= G.wp) act("buy", "a" + (G.ar + 1));
   else if (nw && G.silver >= nw[2] && (G.wp + 1 < 4 || G.ch >= FRANKISH_FROM)) act("buy", "w" + (G.wp + 1));
+  else if (kit && !Number.isFinite(ownGear) && G.silver >= kit[2]) act("buy", "k" + kit[1]);
   else if (G.silver >= 2 && G.gods.odin < 2) act("offer", "odin");
   else if (G.mor >= 30) act("train", (["str", "skl", "end"] as const).slice().sort((a, b) => G[a] - G[b])[0]);
   else act("forage", "raid");
@@ -135,7 +151,7 @@ export function simulate(p: Profile, runs: number): Report {
             const hooks = ok.filter((i) => Object.values(e.options[i].pass.flags ?? {}).some((v) => v));
             if (p.stories && hooks.length) ok = hooks;
             choose(ok[Math.floor(Math.random() * ok.length)]);
-          } else { if (G.acts < 1) rounds = 0; campStep(); }
+          } else { if (G.acts < 1) rounds = 0; campStep(p.thrifty); }
         } else if (G.phase === "battle") {
           rounds++;
           battleStep(p);

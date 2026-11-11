@@ -11,8 +11,9 @@ const isLate = () => g().ch > EDINGTON;
 export interface Ending { l?: string; d: () => string; bonus: () => number }
 /*
  * The three endings you choose reward different lives: baptism rewards reputation, sailing home
- * rewards silver, and land at York rewards rank and kills. They are tuned to be worth about the
- * same for a typical raider, so the choice depends on how you played. `npm run balance` checks it.
+ * rewards silver, and land at York rewards rank and kills. Baptism and land are worth about the
+ * same to a raider who spent his silver on his men; sailing home is for the one who kept it,
+ * and keeping it makes the late battles harder to live through. `npm run balance` checks this.
  */
 export const ENDINGS: Record<EndingId, Ending> = {
   baptism: {
@@ -32,14 +33,14 @@ export const ENDINGS: Record<EndingId, Ending> = {
     d: () => isLate()
       ? `After ${age() - 18} years of war you buy passage north. The whale-road carries you home with your silver.`
       : "You buy passage on a ship bound for the north. The whale-road carries you home with your silver.",
-    bonus: () => 15 + Math.floor(g().silver / 5),
+    bonus: () => 15 + Math.floor(g().silver / 4),
   },
   danelaw: {
     l: "Take land at York",
     d: () => isLate()
       ? "You stay in York and take a farm in the Danelaw, where your name is known in every hall."
       : "You make for York, where Danes now hold the land, and claim a farm of your own.",
-    bonus: () => 24 + g().rank * 7 + Math.floor(g().kills / 4) + (isLate() ? 10 : 0),
+    bonus: () => 24 + g().rank * 7 + Math.floor(g().kills / 3) + (isLate() ? 10 : 0),
   },
   north: { d: () => "You follow Halfdan north and take a farm by the river. Your raiding days are over.", bonus: () => 20 + g().rank * 5 },
   desert: { d: () => "You vanish into the fens with the deserters. Nobody sings about it.", bonus: () => 0 },
