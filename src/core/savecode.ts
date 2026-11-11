@@ -107,6 +107,7 @@ function checkGame(x: unknown): Game {
   need(isObj(G.gods) && ["odin", "thor", "freyr"].every((k) => isInt((G.gods as Obj)[k], 0, 3)));
   need(isObj(G.f) && Object.values(G.f as Obj).every(isNum));
   need(Array.isArray(G.used) && G.used.every((u) => isStr(u)));
+  need(G.at === undefined || (isObj(G.at) && Object.values(G.at).every((ch) => isInt(ch, 0, CH.length - 1))));
   need(Array.isArray(G.log) && G.log.every((l) => isObj(l) && isStr(l.t, 2000) && LOG_CLASSES.includes(l.c as string)));
   const crew = G.crew as Obj;
   need(isObj(crew) && [crew.L, crew.R].every((side) => Array.isArray(side) && side.length <= 8

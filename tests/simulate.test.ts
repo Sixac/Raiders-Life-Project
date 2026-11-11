@@ -5,15 +5,16 @@
  */
 import { describe as group, expect, it } from "vitest";
 import { EVENTS } from "../src/content/tables";
-import { describe, pctOf, simulate, type Profile, type Report } from "./sim";
+import { describe, describeEvents, pctOf, shown, simulate, type Profile, type Report } from "./sim";
 
-const RUNS = 1500;
+const RUNS = 1500;   // for each kind of player below
 const PROFILES: Record<string, Profile> = {
   "careful, timing off": { careful: true, timing: "off" },
   "careful, poor timing": { careful: true, timing: "poor" },
   "careful, average timing": { careful: true, timing: "average" },
   "careful, skilled timing": { careful: true, timing: "skilled" },
   "careless, average timing": { careful: false, timing: "average" },
+  "careful, average timing, follows the stories": { careful: true, timing: "average", stories: true },
 };
 
 group("simulated play", () => {
@@ -23,6 +24,8 @@ group("simulated play", () => {
       r[label] = simulate(p, RUNS);
       console.log(describe(label, r[label]));
     }
+    const story = r["careful, average timing, follows the stories"];
+    console.log(describeEvents(story));
     const seen = new Set(Object.values(r).flatMap((x) => [...x.eventsSeen]));
     console.log("events never seen:", EVENTS.filter((e) => !seen.has(e.id)).map((e) => e.id).join(", ") || "none");
 
@@ -45,5 +48,13 @@ group("simulated play", () => {
     // No single ending should be the best choice for nearly everyone who reaches 900.
     const n900 = avg.silver900.length;
     for (const k of Object.keys(avg.bestEnding)) expect(pctOf(avg.bestEnding[k], n900)).toBeLessThan(75);
+
+    // Stories: most sagas should have one in them, and once begun its later steps must really come.
+    expect(pctOf(story.storyBegun, story.storyRuns)).toBeGreaterThan(75);
+    for (const e of EVENTS.filter((x) => x.after && story.eventCould[x.id])) expect(shown(story, e.id), `${e.id} should follow ${e.after}`).toBeGreaterThan(90);
+    // Following a story should be neither a trap nor a shortcut.
+    expect(Math.abs(survival("careful, average timing, follows the stories") - survival("careful, average timing"))).toBeLessThan(10);
+    // No event should be so rare that it might as well not be there (counting only runs where it could come).
+    for (const e of EVENTS.filter((x) => (story.eventCould[x.id] ?? 0) > 50)) expect(shown(story, e.id), `${e.id} is hardly ever seen`).toBeGreaterThan(6);
   }, 300_000);
 });

@@ -9,6 +9,7 @@ const ENDINGS = ["baptism", "sail", "danelaw", "north", "desert", "death", "outl
 const OUTCOME_KEYS = ["text", "rep", "mor", "hp", "silver", "str", "skl", "end", "silverLoss", "flags", "wound", "woundChance", "addCrew", "weapon", "favour", "endRun"];
 const COND_KEYS = ["flags", "notFlags", "minAge", "minKills", "maxWeapon", "minSilver", "nid"];
 const PLACEHOLDERS = ["lost", "god", "crewFirst", "name"];
+const EVENT_KEYS = ["id", "chapters", "when", "minRank", "priority", "repeatable", "after", "gap", "weight", "text", "options"];
 
 function checkCond(c: Cond | undefined, where: string) {
   if (!c) return;
@@ -58,8 +59,18 @@ describe("events", () => {
   });
   for (const e of EVENTS) {
     it(`${e.id} is well formed`, () => {
+      for (const k of Object.keys(e)) expect(EVENT_KEYS, `${e.id}: unknown field "${k}"`).toContain(k);
       expect(e.text.length).toBeGreaterThan(0);
       expect(e.options.length).toBeGreaterThanOrEqual(2);
+      if (e.weight !== undefined) expect(e.weight, `${e.id}: weight`).toBeGreaterThan(0);
+      if (e.after) {
+        // The next step of a story: the step before must exist, and leave this one time to come.
+        const before = EVENTS.find((x) => x.id === e.after);
+        expect(before, `${e.id}: after "${e.after}" names no event`).toBeDefined();
+        const gap = e.gap ?? 1;
+        expect(gap, `${e.id}: gap`).toBeGreaterThanOrEqual(1);
+        expect((before!.chapters?.[0] ?? 0) + gap, `${e.id} comes too early to follow ${e.after}`).toBeLessThanOrEqual(e.chapters?.[1] ?? CH.length - 1);
+      } else expect(e.gap, `${e.id}: gap needs after`).toBeUndefined();
       if (e.chapters) {
         expect(e.chapters[0]).toBeLessThanOrEqual(e.chapters[1]);
         expect(e.chapters[1]).toBeLessThan(CH.length);

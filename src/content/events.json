@@ -13,7 +13,7 @@
     ]
   },
   {
-    "id": "rival2", "chapters": [3, 6], "when": { "flags": { "rival": 1 } },
+    "id": "rival2", "chapters": [3, 6], "after": "rival1", "priority": true, "when": { "flags": { "rival": 1 } },
     "text": "Hrafn is telling the whole camp that you hid behind your shield in the last fight.",
     "options": [
       { "label": "Challenge him to a hólmganga", "check": { "stat": "fight", "diff": 1 },
@@ -25,7 +25,7 @@
     ]
   },
   {
-    "id": "rival3a", "chapters": [6, 10], "when": { "flags": { "rival": 2 } },
+    "id": "rival3a", "chapters": [6, 10], "after": "rival2", "priority": true, "when": { "flags": { "rival": 2 } },
     "text": "On the eve of battle Hrafn comes to your fire and holds out his hand. “Old quarrels are for peacetime.”",
     "options": [
       { "label": "Take his hand",
@@ -35,7 +35,7 @@
     ]
   },
   {
-    "id": "rival3b", "chapters": [6, 10], "when": { "flags": { "rival": 3 } },
+    "id": "rival3b", "chapters": [6, 10], "after": "rival2", "priority": true, "when": { "flags": { "rival": 3 } },
     "text": "You wake in the dark to a hand at your purse. It is Hrafn.",
     "options": [
       { "label": "Grab his wrist (skill)", "check": { "stat": "skl", "diff": 1 },
@@ -58,7 +58,7 @@
     ]
   },
   {
-    "id": "wife2", "chapters": [3, 6], "when": { "flags": { "wife": 1 } },
+    "id": "wife2", "chapters": [3, 6], "after": "wife1", "priority": true, "when": { "flags": { "wife": 1 } },
     "text": "Eadgyth has no family left in her town. She asks whether a raider has room for a wife who prays to the White Christ.",
     "options": [
       { "label": "Take her as your wife",
@@ -68,7 +68,7 @@
     ]
   },
   {
-    "id": "wife3", "chapters": [5, 12], "when": { "flags": { "wife": 2 } },
+    "id": "wife3", "chapters": [5, 12], "after": "wife2", "priority": true, "when": { "flags": { "wife": 2 } },
     "text": "Eadgyth asks you to promise that one day you will stand at the font with her.",
     "options": [
       { "label": "Promise her",
@@ -78,13 +78,13 @@
     ]
   },
   {
-    "id": "child", "chapters": [6, 9], "when": { "flags": { "wife": 2 }, "notFlags": ["son"] },
+    "id": "child", "chapters": [6, 9], "after": "wife3", "priority": true, "when": { "flags": { "wife": 2 }, "notFlags": ["son"] },
     "text": "Eadgyth tells you she is with child.",
     "options": [
       { "label": "Swear to see the child grown",
-        "pass": { "text": "A son is born before the next winter. Morale +10.", "mor": 10, "flags": { "son": 1 } } },
+        "pass": { "text": "A son is born before the next winter, and Eadgyth names him Eadric. Morale +10.", "mor": 10, "flags": { "son": 1 } } },
       { "label": "Pay a farmwife to keep them",
-        "pass": { "text": "Mother and child stay safe behind the army. A son is born that winter. Silver −5, morale +3.", "silver": -5, "mor": 3, "flags": { "son": 1 } } }
+        "pass": { "text": "Mother and child stay safe behind the army. A son, Eadric, is born that winter. Silver −5, morale +3.", "silver": -5, "mor": 3, "flags": { "son": 1 } } }
     ]
   },
   {
@@ -100,7 +100,7 @@
     ]
   },
   {
-    "id": "thegn2", "chapters": [7, 7], "priority": true, "when": { "flags": { "thegn": 1 } },
+    "id": "thegn2", "chapters": [7, 7], "after": "thegn1", "priority": true, "when": { "flags": { "thegn": 1 } },
     "text": "A Saxon rider comes to the edge of camp under a green branch. Wulfstan sends word: if the day goes against you, come to the ford by the white stone and his men will let you through.",
     "options": [
       { "label": "Remember the ford",
@@ -357,12 +357,14 @@
   },
   {
     "id": "son_spear", "chapters": [13, 14], "priority": true, "when": { "flags": { "son": 1 } },
-    "text": "Your son is nearly grown, and he has been practising with a spear behind the tents. He asks to come to the shield-wall with you.",
+    "text": "Your son Eadric is nearly grown, and he has been practising with a spear behind the tents. He asks to come to the shield-wall with you.",
     "options": [
       { "label": "Let him carry your spare shield behind the wall",
         "pass": { "text": "He stays behind the line and watches every blow. Morale +6.", "mor": 6 } },
       { "label": "Send him home to his mother",
-        "pass": { "text": "He goes, angry, and you are glad of it. Morale +3.", "mor": 3 } }
+        "pass": { "text": "He goes, angry, and you are glad of it. Morale +3.", "mor": 3 } },
+      { "label": "Give him a place in the wall beside you",
+        "pass": { "text": "Eadric takes his place at your shoulder, white-faced and steady. Morale +4.", "mor": 4, "addCrew": { "name": "Eadric", "hp": 12, "place": "shortSide" } } }
     ]
   },
   {

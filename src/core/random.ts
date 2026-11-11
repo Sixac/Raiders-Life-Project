@@ -3,6 +3,12 @@ export const R = (n: number) => Math.floor(Math.random() * n);
 export const cl = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 export const pick = <T>(a: readonly T[]): T => a[R(a.length)];
 export const pct = (p: number) => Math.random() * 100 < p;
+/** Pick one item, each with a chance in proportion to its weight. */
+export function pickWeighted<T>(items: readonly T[], weight: (item: T) => number): T {
+  let r = Math.random() * items.reduce((sum, item) => sum + weight(item), 0);
+  for (const item of items) { r -= weight(item); if (r < 0) return item; }
+  return items[items.length - 1];
+}
 export const roll = <T>(p: number, a: () => T, b: () => T): T => (pct(p) ? a() : b());
 
 /** Deterministic generator, used so each chapter's scene always looks the same. */

@@ -26,7 +26,7 @@ You need [Node.js](https://nodejs.org) 22.12 or newer.
 ```sh
 npm install
 npm run dev        # play at http://localhost:5173 with live reload
-npm test           # check the content files and simulate 7,500 runs
+npm test           # check the content files and simulate 9,000 runs
 npm run build      # build dist/index.html, one self-contained file
 ```
 
@@ -71,6 +71,7 @@ tests/
   html.test.ts      names and other text are shown as typed, never as markup
   state.test.ts     whatever is in the browser’s storage, the game still starts
   help.test.ts      the How to play page leaves out no move, rank or god
+  events.test.ts    how camp events are chosen: fixed moments, story steps, weights
   simulate.test.ts  plays thousands of runs with bots and checks the balance
   sim.ts            the bot and the balance report
 docs/               the screenshots at the top of this page
@@ -102,10 +103,17 @@ Events live in `src/content/events.json`. Add one and it can appear in camp; no 
 | `chapters` | `[first, last]` chapter it can appear in, counting from 0 (865 is 0, 900 is 15). |
 | `when` | A condition (below) that must hold for the event to appear. |
 | `minRank` | 1 veteran, 2 hirðman, 3 ship’s captain, 4 hersir. |
-| `priority` | Shown before any other eligible event, for fixed historical moments. |
+| `priority` | Shown before any other eligible event: for fixed historical moments, and for the next step of a story. |
+| `after` | Makes this the next step of a story: the `id` of the event that must have been met first, in an earlier chapter. |
+| `gap` | With `after`: how many chapters must pass in between (1 if not given). |
+| `weight` | How strongly the event is favoured over others that could come. Rarely needed; see below. |
 | `repeatable` | Can appear more than once. |
 | `text` | What happens. `{crewFirst}` and `{name}` are filled in. |
 | `options` | Two or more choices. At least one must have no requirement. |
+
+**Which event comes.** Each camp opens with one event, and a second turns up partway through about half the time. Events marked `priority` come first, the one whose last chapter is nearest before the others, and a second event always follows them, so they never crowd out the rest. Otherwise the choice is random but weighted: an event that belongs to one chapter counts 12 times, to two chapters 6, to three 3, to up to six 2, and anything wider once. That way each chapter’s own events are seen far more often than the ones that could happen in any camp. Set `weight` only to override this.
+
+**Stories.** To continue a story in a later chapter, give the next event `after` (and usually `priority`, so it comes at the first camp it can) and a `when` that checks the flag the earlier choice set. `wife1`, `wife2`, `wife3`, `child` and `son_spear` show the pattern. `npm run balance` reports how often each step appears among the runs where it could.
 
 **Option fields**
 
@@ -131,11 +139,11 @@ Run `npm test` after editing. The content test names the event and field if some
 
 Most of the numbers you would want to change are in `src/content/tables.ts`: ranks and promotion thresholds, gear prices, training, enemy strength, the bonus for perfectly timed swings, how often each kind of enemy makes each move (`FOE_KINDS`), how often enemies feint and how likely a raider is to see through it (`FEINTS`), loot and the jarl's gift, and the prices of gifts and hired spearmen. The kinds of enemy in each battle are set by `foeKinds` in `src/content/chapters.json`. Hit chance and damage formulas are in `src/core/combat.ts`, and the ending bonuses in `src/core/endings.ts`.
 
-`npm run balance` plays 7,500 runs with bots and prints a report for each kind of player: careful players (who answer the enemy's moves) with poor, average and skilled timing or timing turned off, and careless players. For each it shows how many survive to 900, where the rest die, when each rank is first reached, silver and reputation at the end, and which ending would score best.
+`npm run balance` plays 9,000 runs with bots and prints a report for each kind of player: careful players (who answer the enemy's moves) with poor, average and skilled timing or timing turned off, careless players, and a careful player who follows the stories. For each it shows how many survive to 900, where the rest die, when each rank is first reached, silver and reputation at the end, and which ending would score best. It also shows how often a story begins, how often each later step of a story comes, and which events are seen least.
 
 The How to play page (`src/ui/help.ts`) is built from the same tables, so it follows most changes by itself. The few numbers written out there by hand come from formulas in the rules, and the comments in that file say which.
 
-The test fails when a change tips the game too far, for example if a careful player with average timing survives to 900 less than 15% or more than 45% of the time, if timing decides too much, if the top ranks come before Edington, or if one ending is best for nearly everyone. The limits are in `tests/simulate.test.ts`; the bot is in `tests/sim.ts`.
+The test fails when a change tips the game too far, for example if a careful player with average timing survives to 900 less than 15% or more than 45% of the time, if timing decides too much, if the top ranks come before Edington, if one ending is best for nearly everyone, if a story’s later steps stop coming, or if an event becomes so rare it might as well not be there. The limits are in `tests/simulate.test.ts`; the bot is in `tests/sim.ts`.
 
 ## The public site
 
