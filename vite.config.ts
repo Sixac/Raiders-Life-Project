@@ -1,6 +1,6 @@
 import { defineConfig } from "vite";
 import { viteSingleFile } from "vite-plugin-singlefile";
-import pkg from "./package.json";
+import pkg from "./package.json" with { type: "json" };
 
 // The build is one self-contained index.html: easy to host anywhere,
 // and it works as the front end of a desktop (Tauri or Electron) build.
