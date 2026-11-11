@@ -24,5 +24,9 @@ export const ui = {
   /** End screen: whether the saga was copied, or the text to copy by hand. */
   shareMsg: "",
   shareText: "",
+  /** The How to play page is showing. */
+  help: false,
+  /** Set when something broke and the game came back to the title screen: what went wrong. */
+  problem: "",
 };
 export const freshUiName = () => (ui.name = randomName());

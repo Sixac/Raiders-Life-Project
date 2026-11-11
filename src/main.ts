@@ -1,8 +1,8 @@
 /* Browser entry point. A desktop build can call useStore(...) here before loadLegacy(). */
 import "./ui/fonts.css";
 import "./ui/styles.css";
-import type { Battle, Game } from "./types";
 import { loadLegacy, st } from "./core/state";
+import { checkLocalRun } from "./core/savecode";
 import { SAVE_VERSION } from "./save/storage";
 import { bindInput, loadRun } from "./ui/actions";
 import { render } from "./ui/render";
@@ -26,8 +26,9 @@ registerOffline();
 
 // When the page is updated on claude.ai while someone is playing, carry the run across.
 const start = (d: unknown) => {
-  const s = d as { G?: Game; B?: Battle | null } | null;
-  if (s?.G) loadRun({ v: SAVE_VERSION, G: s.G, B: s.B ?? null });
+  const s = d as { G?: unknown; B?: unknown } | null;
+  const run = s?.G ? checkLocalRun({ v: SAVE_VERSION, G: s.G, B: s.B ?? null }) : null;
+  if (run) loadRun(run);
   render();
 };
 const hot = window.claude?.hot;

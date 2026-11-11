@@ -2,7 +2,7 @@
 import type { Action, Foe, IntentId, Quality, Swing } from "../types";
 import { ARMOUR, ATTACKS, CH, COST, ENEMIES, FEINTS, FOE_KINDS, INTENTS, JARL_GIFT, LOOT, RANKS, SWING } from "../content/tables";
 import { cl, pct, pick, R, roll } from "./random";
-import { b, ck, crewAll, eSkl, eStr, exposed, g, hurt, keepLegacy, maxSta, say, st, tier } from "./state";
+import { b, cap, ck, crewAll, eSkl, eStr, exposed, g, hurt, keepLegacy, maxSta, say, st, tier } from "./state";
 import { addWound, fix, promote, refillCrew } from "./life";
 import { advance } from "./camp";
 import { die, isFinale } from "./endings";
@@ -12,6 +12,11 @@ export const readP = () => cl(45 + eSkl() * 6, 45, 95);
 /** Chance (percent) to see through a feint. */
 export const seeP = () => cl(FEINTS.seeBase + eSkl() * FEINTS.seePerSkill, FEINTS.seeBase, FEINTS.seeMax);
 const kindOf = (f: Foe) => FOE_KINDS[f.kind ?? (f.champ ? "elite" : "levy")];
+
+/** True for a name that starts with whose man he is, such as "Louis’s champion": it takes no "the". */
+export const namesHisLord = (n: string) => /^\p{Lu}[\p{L}-]*(?: \p{Lu}[\p{L}-]*)*’s /u.test(n);
+/** An enemy as he reads mid-sentence: "the Mercian spearman", "Louis’s champion". */
+export const theFoe = (f: { n: string }) => (namesHisLord(f.n) ? f.n : `the ${f.n}`);
 
 function pickMove(w: Partial<Record<IntentId, number>>, not?: IntentId): IntentId {
   const ks = (Object.keys(w) as IntentId[]).filter((k) => k !== not && (w[k] ?? 0) > 0);
@@ -151,9 +156,11 @@ function foeFalls(f: Foe, m: string[]): boolean {
   const G = g(), B = b();
   G.kills++; B.kills++; B.line++;
   if (f.champ) B.champKilled = true;
-  m.push(`The ${f.n} falls.`);
+  m.push(`${cap(theFoe(f))} falls.`);
   B.i++;
-  if (B.i < B.foes.length) m.push(`Another ${B.foes[B.i].n} steps over the body.`);
+  const next = B.foes[B.i];
+  // The champion comes last and there is only one of him, so he is not "another".
+  if (next) m.push(next.champ ? `${cap(theFoe(next))} steps over the body.` : `Another ${next.n} steps over the body.`);
   return B.i >= B.foes.length;
 }
 function wallRound(a: Action, m: string[]): void {
@@ -204,7 +211,7 @@ export function resolve(a: Action, q: Quality): void {
       if (q === "perfect") { d = Math.ceil(d * SWING.perfect.dmg); B.flash = "A perfect blow!"; }
       f.hp -= d;
       const verb = ({ strike: "You hit", heavy: "Your heavy blow lands on", berserk: "In a red rage you hack at", bash: "Your shield boss smashes into" } as Record<string, string>)[a];
-      m.push(`${verb} the ${f.n} for ${d}${q === "perfect" ? ", a perfect blow" : ""}.`);
+      m.push(`${verb} ${theFoe(f)} for ${d}${q === "perfect" ? ", a perfect blow" : ""}.`);
       if (a === "heavy" && it === "hold" && f.df > 0) { f.df--; m.push("His shield splits."); }
       if (a === "bash" && (it === "hook" || it === "shove")) { B.line++; m.push(it === "hook" ? "You drive him back before he can hook your shield." : "You meet his shove and drive him back."); }
       else if (a === "bash" && pct(30)) { B.line++; m.push("He stumbles back a step."); }
@@ -229,7 +236,7 @@ export function resolve(a: Action, q: Quality): void {
     if (pct(cl(foeP(a) + o.foe, 5, 95))) {
       const d = Math.max(1, f.atk + (it === "overhead" ? 2 : it === "charge" ? 4 : 0) + R(3) - Math.floor(ARMOUR[G.ar][1] / 2) + (a === "berserk" ? 2 : 0) - (a === "guard" ? 1 : 0));
       G.hp -= d;
-      m.push(`The ${f.n} wounds you for ${d}.`);
+      m.push(`${cap(theFoe(f))} wounds you for ${d}.`);
       if (it === "charge") { B.line--; m.push("The wall bends under his charge."); }
       if (G.hp > 0 && ((d >= 5 && pct(30)) || pct(4))) addWound();
     } else m.push("You turn his blow.");

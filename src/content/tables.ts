@@ -1,5 +1,5 @@
 /* Tuning tables: ranks, gear, wounds, gods, legacy perks, enemy moves. */
-import type { Action, Chapter, FoeKind, GameEvent, GodId, IntentId, PerkId, WoundId } from "../types";
+import type { Action, Chapter, FoeKind, GameEvent, GodId, IntentId, PerkId, Stat, WoundId } from "../types";
 import chaptersJson from "./chapters.json";
 import eventsJson from "./events.json";
 
@@ -28,6 +28,16 @@ export const RANKS: Rank[] = [
 ];
 /** Rank from which the raider leads a war-band: a third man on each side of the wall. */
 export const WARBAND_RANK = 4;
+
+/**
+ * What each stat does, as shown to the player. The numbers themselves live in the rules:
+ * dmgRange and hitP in core/combat.ts, maxhp in core/state.ts. Change these lines if you change those.
+ */
+export const STATS: Record<Stat, { n: string; d: string }> = {
+  str: { n: "Strength", d: "+1 damage for every 2 points" },
+  skl: { n: "Skill", d: "+4% to hit; you read moves and feints more often" },
+  end: { n: "Endurance", d: "+2 health" },
+};
 
 /** Training: the morale it costs, and the chance it works while the stat is below each level. */
 export const TRAINING = {
