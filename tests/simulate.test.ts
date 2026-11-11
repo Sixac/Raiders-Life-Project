@@ -18,6 +18,8 @@ const PROFILES: Record<string, Profile> = {
   // Legacy gifts: the strongest pair and the strongest three found when they were tuned.
   "careful, average timing, two gifts": { careful: true, timing: "average", boons: ["skl", "end"] },
   "careful, average timing, three gifts": { careful: true, timing: "average", boons: ["skl", "end", "jerkin"] },
+  // Keeps his silver to sail home rich: hires men, but pays for no healer, rings, gifts to the jarl or kit.
+  "careful, average timing, thrifty": { careful: true, timing: "average", thrifty: true },
 };
 
 group("simulated play", () => {
@@ -61,6 +63,14 @@ group("simulated play", () => {
     // And they should last: a careless first raider can usually afford one gift, but owning everything takes many good sagas.
     expect(median(r["careless, average timing"].points)).toBeGreaterThanOrEqual(BOON_PRICES[0]);
     expect(shop).toBeGreaterThan(8 * median(avg.points));
+
+    // Late silver has uses: a raider who spends it on his men, the healer and the jarl ends with little left...
+    const thrifty = r["careful, average timing, thrifty"];
+    expect(median(avg.silver900)).toBeLessThan(200);
+    // ...and lives noticeably more often than one who keeps it,
+    expect(survival("careful, average timing") - survival("careful, average timing, thrifty")).toBeGreaterThan(4);
+    // while the one who keeps it and lives is the one for whom sailing home is the best ending.
+    expect(pctOf(thrifty.bestEnding.sail, thrifty.silver900.length)).toBeGreaterThan(50);
 
     // Stories: most sagas should have one in them, and once begun its later steps must really come.
     expect(pctOf(story.storyBegun, story.storyRuns)).toBeGreaterThan(75);

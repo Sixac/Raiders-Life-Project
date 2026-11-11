@@ -1,6 +1,6 @@
 /* The shield-wall battle: enemy moves, timed swings, the push of the walls, mid-fight choices, loot. */
 import type { Action, Foe, IntentId, Quality, Swing } from "../types";
-import { ARMOUR, ATTACKS, BOON_EFFECT, CH, COST, ENEMIES, FEINTS, FOE_KINDS, INTENTS, JARL_GIFT, LOOT, RANKS, SWING } from "../content/tables";
+import { ARMOUR, ATTACKS, BOON_EFFECT, CH, COST, CREW_STRIKE, EDINGTON, ENEMIES, FEINTS, FOE_KINDS, INTENTS, JARL_GIFT, LOOT, RANKS, RINGS, SWING } from "../content/tables";
 import { cl, pct, pick, R, roll } from "./random";
 import { b, cap, carries, ck, crewAll, eSkl, eStr, exposed, g, hurt, keepLegacy, maxSta, say, st, tier } from "./state";
 import { addWound, fix, promote, refillCrew } from "./life";
@@ -56,7 +56,9 @@ export function visibleIntent(): { id: IntentId | null; shown: IntentId | null; 
 export function march(): void {
   const G = g();
   if (G.phase !== "camp" || G.ev) return;
-  const c = CH[G.ch], t = tier(), late = Math.max(0, G.ch - 7), foes: Foe[] = [];
+  const c = CH[G.ch], t = tier(), foes: Foe[] = [];
+  // One more health for each chapter after Edington, and lateHp more for each from chapter lateFrom on.
+  const late = Math.max(0, G.ch - EDINGTON) + Math.max(0, G.ch - ENEMIES.lateFrom + 1) * ENEMIES.lateHp;
   for (let i = 0; i < c.foeCount; i++) {
     const champ = i === c.foeCount - 1 && G.ch > 0;
     const hp = 6 + Math.round(t * 2.5) + late + R(3) + (champ ? 4 : 0);
@@ -226,7 +228,7 @@ export function resolve(a: Action, q: Quality): void {
     else { B.line--; B.sta = Math.max(0, B.sta - 1); m.push("His shove sends you staggering. Your wall gives ground."); }
   }
   if (it === "hold" && (a === "strike" || a === "heavy" || a === "berserk")) m.push("He stays crouched behind his shield.");
-  if (f.hp > 0 && crewAll().length && pct(20)) { const c = pick(crewAll()), d = 2 + Math.floor(tier() / 2); f.hp -= d; m.push(`${c.n}’s spear finds a gap for ${d}.`); }
+  if (f.hp > 0 && crewAll().length && pct(CREW_STRIKE + (G.rings ? RINGS.strike : 0))) { const c = pick(crewAll()), d = 2 + Math.floor(tier() / 2); f.hp -= d; m.push(`${c.n}’s spear finds a gap for ${d}.`); }
   let killed = false;
   if (f.hp <= 0) {
     killed = true;
@@ -348,7 +350,7 @@ function victory(rout: boolean): void {
   if (G.nid && !B.broken) { G.nid = false; msg += " You held your place in the wall, and men stop calling you níðingr."; }
   say(msg, "good");
   if (B.lost.length) say(`You lost ${B.lost.join(", ")} from your part of the wall.`, "bad");
-  st.B = null;
+  st.B = null; G.rings = false;
   promote(); refillCrew();
   if (isFinale(G.ch)) {
     const edington = G.ch === 7;
@@ -368,7 +370,7 @@ function withdraw(): void {
   else if (G.nid) { st.B = null; die("outlaw"); return; }
   else { G.nid = true; G.rep -= 6; G.mor -= 15; say("You leave your place in the wall. Men will call you níðingr until you stand fast again. Reputation −6, morale −15.", "bad"); }
   if (G.f.oath) { G.rep -= 4; delete G.f.oath; say("Your Yule oath is broken. Reputation −4.", "bad"); }
-  st.B = null;
+  st.B = null; G.rings = false;
   refillCrew();
   if (isFinale(G.ch)) { G.phase = "finale"; return; }
   advance();

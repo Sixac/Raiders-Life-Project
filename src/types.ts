@@ -54,6 +54,11 @@ export interface Game {
   ev: string | null;
   mid: boolean;
   lastEv: string | null;
+  /** How well a captain has kitted out the men beside him (a step in CREW_KITS). */
+  kit?: number;
+  /** The healer has been paid this camp; rings have been given for the coming battle. */
+  healed?: boolean;
+  rings?: boolean;
   /** The legacy gifts this raider carries. */
   boons?: BoonId[];
   /** Hoard share and jarl's gift waiting on the after-battle screen. */

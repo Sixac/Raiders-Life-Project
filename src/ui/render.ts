@@ -1,6 +1,6 @@
 /* All screens. render() rebuilds the page from state after every action. */
 import type { Action, BoonId, EndingId, Stat } from "../types";
-import { ARMOUR, BOON_SLOTS, BOONS, CH, EDINGTON, EVENT_BY_ID, FOE_KINDS, GIFT, GODS, HIRE, INTENTS, RANKS, STATS, TRAINING, WEAPONS, WOUNDS } from "../content/tables";
+import { ARMOUR, BOON_SLOTS, BOONS, CH, CREW_KIT, CREW_KITS, EDINGTON, EVENT_BY_ID, FOE_KINDS, GIFT, GODS, HEALER, HIRE, INTENTS, RANKS, RINGS, STATS, TRAINING, WEAPONS, WOUNDS } from "../content/tables";
 import { readSaved } from "../save/local";
 import { age, b, cap, eSkl, eStr, exposed, g, listOf, maxhp, maxSta, nextBoonPrice, saveRun, st, withArticle } from "../core/state";
 import { cl } from "../core/random";
@@ -57,6 +57,7 @@ function sheet(): string {
   if (G.f.son) chips.push(`<span class="chip good">A son</span>`);
   if (G.f.oath) chips.push(`<span class="chip">Yule oath: kill the next champion</span>`);
   if (G.f.ford) chips.push(`<span class="chip good">Wulfstan’s ford</span>`);
+  if (G.rings) chips.push(`<span class="chip good">Rings given: your men strike more often</span>`);
   G.boons?.forEach((id) => chips.push(`<span class="chip" title="${BOONS[id].d}">${BOONS[id].n}</span>`));
   const pips = (v: number) => `<span class="pips" role="img" aria-label="${v} of 3">${[0, 1, 2].map((i) => `<span class="pip${i < v ? " on" : ""}"></span>`).join("")}</span>`;
   return `<section class="panel" aria-label="Your raider">
@@ -64,7 +65,7 @@ function sheet(): string {
     ${bar("Health", G.hp, maxhp(), "hp")}${B ? bar("Stamina", B.sta, maxSta(), "sta") : ""}${bar("Morale", G.mor, 100, "mo")}
     <div class="stats">${stat("Strength", G.str, eStr())}${stat("Skill", G.skl, eSkl())}${stat("Endurance", G.end, G.end)}
       <div class="stat"><span>Reputation</span><b>${G.rep}</b></div><div class="stat"><span>Silver</span><b>${G.silver}</b></div><div class="stat"><span>Foes slain</span><b>${G.kills}</b></div></div>
-    <p class="gear">You carry ${withArticle(WEAPONS[G.wp][0])} and wear ${withArticle(ARMOUR[G.ar][0])}.</p>
+    <p class="gear">You carry ${withArticle(WEAPONS[G.wp][0])} and wear ${withArticle(ARMOUR[G.ar][0])}.${G.rank >= CREW_KIT.rank || G.kit ? ` Your men have ${CREW_KITS[G.kit ?? 0][0]}.` : ""}</p>
     ${next ? `<p class="nextrank">Next rank, ${next.n.toLowerCase()}: reputation ${G.rep} of ${next.rep}, foes slain ${G.kills} of ${next.kills}${G.nid ? ", blocked while you are níðingr" : ""}.</p>` : `<p class="nextrank">You hold the highest rank.</p>`}
     ${chips.length ? `<div class="chips">${chips.join("")}</div>` : ""}
     <div class="gods"><h3>Favour of the gods</h3>${(Object.keys(GODS) as (keyof typeof GODS)[]).map((k) => `<div class="god"><span>${GODS[k].n}</span>${pips(G.gods[k])}</div>`).join("")}</div>
@@ -110,7 +111,8 @@ function campView(): string {
     } else if (ui.sub === "forage") {
       h += `<div class="actions">${btn("Hunt in the woods", "act", ["forage", "hunt"], { note: "a test of your aim" })}${btn("Raid a farmstead", "act", ["forage", "raid"], { odds: 55, note: "silver, or a beating" })}${btn("Fish the river", "act", ["forage", "fish"], { note: "safe, small morale gain" })}${btn("Back", "sub", [null])}</div>`;
     } else if (ui.sub === "smith") {
-      const items = smithItems().map((o) => btn(`${o.w[0]}, ${o.w[2]} silver`, "act", ["buy", `${o.t}${o.i}`], { dis: G.silver < o.w[2], note: o.t === "w" ? `+${o.w[1] * 2} damage, +${o.w[1] * 2}% to hit` : `enemies hit you ${o.w[1] * 5}% less` })).join("");
+      const what = { w: (o: { w: [string, number, number] }) => `+${o.w[1] * 2} damage, +${o.w[1] * 2}% to hit`, a: (o: { w: [string, number, number] }) => `enemies hit you ${o.w[1] * 5}% less`, k: () => `every man beside you gains ${CREW_KIT.hp} health, now and later` };
+      const items = smithItems().map((o) => btn(`${o.t === "k" ? "For your men: " : ""}${o.w[0]}, ${o.w[2]} silver`, "act", ["buy", `${o.t}${o.i}`], { dis: G.silver < o.w[2], note: what[o.t](o) })).join("");
       h += `<p class="muted">You have ${G.silver} silver.</p><div class="actions">${items || "<p>The smith has nothing better to sell you.</p>"}${btn("Back", "sub", [null])}</div>`;
     } else if (ui.sub === "gods") {
       h += `<div class="actions">${(Object.keys(GODS) as (keyof typeof GODS)[]).map((k) => btn(`Offer to ${GODS[k].n}`, "act", ["offer", k], { dis: G.silver < 2 || G.gods[k] >= 3, note: `2 silver. ${GODS[k].d}` })).join("")}${btn("Back", "sub", [null])}</div>`;
@@ -119,11 +121,13 @@ function campView(): string {
         ${btn("Train", "sub", ["train"], { dis: none, note: "raise a stat" })}
         ${btn("Feast", "act", ["feast"], { dis: none || G.silver < 3, note: "3 silver, morale +20" })}
         ${btn("Rest", "act", ["rest"], { dis: none, note: `health +${10 + (G.f.wife === 2 ? 4 : 0)}, wounds mend` })}
+        ${btn("Pay the healer", "act", ["heal"], { dis: !!G.healed || G.silver < HEALER.price || G.hp >= maxhp(), note: G.healed ? "already paid this camp" : G.hp >= maxhp() ? "you have no hurts to tend" : `${HEALER.price} silver, health +${HEALER.hp}, no action used` })}
         ${btn("Forage", "sub", ["forage"], { dis: none, note: "hunt, raid or fish" })}
-        ${btn("Visit the smith", "sub", ["smith"], { dis: none, note: "weapons and armour" })}
+        ${btn("Visit the smith", "sub", ["smith"], { dis: none, note: G.rank >= CREW_KIT.rank ? "weapons, armour, kit for your men" : "weapons and armour" })}
         ${btn("Make an offering", "sub", ["gods"], { dis: none, note: "gain a god’s favour" })}
         ${btn("Bring the jarl a gift", "act", ["gift"], { dis: G.jarl || G.nid || G.silver < GIFT.price, note: G.nid ? "he takes nothing from a níðingr" : G.jarl ? "already given this camp" : `${GIFT.price} silver, reputation +${GIFT.rep}, no action used` })}
         ${G.rank >= 1 ? btn("Drill the recruits", "act", ["drill"], { dis: none, note: "reputation +2, morale −3" }) : ""}
+        ${G.rank >= RINGS.rank ? btn("Give rings to your men", "act", ["rings"], { dis: !!G.rings || G.nid || G.silver < RINGS.price, note: G.rings ? "given for the coming battle" : `${RINGS.price} silver, they strike more often in the coming battle, reputation +${RINGS.rep}, no action used` }) : ""}
         ${G.rank >= 1 ? btn("Hire a spearman", "act", ["hire"], { dis: G.silver < HIRE.price || !hireSide(), note: hireSide() ? `${HIRE.price} silver, one more man beside you, no action used` : "your part of the wall is full" }) : ""}
       </div>`;
     }

@@ -48,8 +48,10 @@ export const TRAINING = {
 /**
  * Enemies, and the rewards for beating them, grow with each chapter up to tierCap.
  * hitBase is an enemy's basic chance to hit you, before armour, tier and the other changes.
+ * From chapter lateFrom on (counting from 0) every enemy has lateHp more health with each
+ * chapter: by then a raider has silver to spend on his men, and needs to.
  */
-export const ENEMIES = { tierCap: 12, hitBase: 47 };
+export const ENEMIES = { tierCap: 13, hitBase: 47, lateFrom: 10, lateHp: 1 };
 
 /** Timed swings: change to hit chance and damage for each result. Timing turned off counts as "good". */
 export const SWING = {
@@ -65,6 +67,19 @@ export const JARL_GIFT = { perKill: 1, champion: 3, wallHeld: 2, perRank: 1 };
 /** Ways to spend silver in camp. */
 export const GIFT = { price: 10, rep: 3 };
 export const HIRE = { price: 12, hp: 12, maxPerSide: 3 };
+
+/** A healer in camp: silver for health, without using a camp action. Once each camp. */
+export const HEALER = { price: 12, hp: 10 };
+/**
+ * Kit a captain buys from the smith for the men beside him: [what they carry, price]. Each step
+ * adds CREW_KIT.hp to the health of every man in his part of the wall, now and later.
+ */
+export const CREW_KITS: [string, number][] = [["whatever they came with", 0], ["limewood shields and good spears", 25], ["mail shirts", 45], ["iron helms with their mail", 70]];
+export const CREW_KIT = { rank: 3, hp: 1 };
+/** Arm-rings a hersir gives his men before a battle: they strike that much more often in it (percent), and he gains reputation. */
+export const RINGS = { rank: 4, price: 25, rep: 2, strike: 20 };
+/** How often one of your neighbours lands a blow of his own each round (percent). */
+export const CREW_STRIKE = 20;
 
 /** [name, tier, price]. Weapon tier adds 2 damage and 2% to hit; armour tier cuts enemy hits by 5%. */
 export type Gear = [string, number, number];

@@ -26,7 +26,7 @@ You need [Node.js](https://nodejs.org) 22.12 or newer.
 ```sh
 npm install
 npm run dev        # play at http://localhost:5173 with live reload
-npm test           # check the content files and simulate 12,000 runs
+npm test           # check the content files and simulate 13,500 runs
 npm run build      # build dist/index.html, one self-contained file
 ```
 
@@ -73,6 +73,7 @@ tests/
   help.test.ts      the How to play page leaves out no move, rank or god
   events.test.ts    how camp events are chosen: fixed moments, story steps, weights
   boons.test.ts     legacy gifts: buying them, carrying them, what each does
+  camp.test.ts      the healer, kit for a captain’s men, a hersir’s rings
   simulate.test.ts  plays thousands of runs with bots and checks the balance
   sim.ts            the bot and the balance report
 docs/               the screenshots at the top of this page
@@ -138,13 +139,13 @@ Run `npm test` after editing. The content test names the event and field if some
 
 ## Tuning the balance
 
-Most of the numbers you would want to change are in `src/content/tables.ts`: ranks and promotion thresholds, gear prices, training, enemy strength, the bonus for perfectly timed swings, how often each kind of enemy makes each move (`FOE_KINDS`), how often enemies feint and how likely a raider is to see through it (`FEINTS`), loot and the jarl's gift, the prices of gifts and hired spearmen, and the legacy gifts with their prices and how many one raider carries (`BOONS`, `BOON_PRICES`, `BOON_SLOTS`). The kinds of enemy in each battle are set by `foeKinds` in `src/content/chapters.json`. Hit chance and damage formulas are in `src/core/combat.ts`, and the ending bonuses in `src/core/endings.ts`.
+Most of the numbers you would want to change are in `src/content/tables.ts`: ranks and promotion thresholds, gear prices, training, enemy strength, the bonus for perfectly timed swings, how often each kind of enemy makes each move (`FOE_KINDS`), how often enemies feint and how likely a raider is to see through it (`FEINTS`), loot and the jarl's gift, the prices of gifts, hired spearmen, the healer, kit for a captain’s men and a hersir’s rings (`GIFT`, `HIRE`, `HEALER`, `CREW_KITS`, `RINGS`), and the legacy gifts with their prices and how many one raider carries (`BOONS`, `BOON_PRICES`, `BOON_SLOTS`). The kinds of enemy in each battle are set by `foeKinds` in `src/content/chapters.json`. Hit chance and damage formulas are in `src/core/combat.ts`, and the ending bonuses in `src/core/endings.ts`.
 
-`npm run balance` plays 12,000 runs with bots and prints a report for each kind of player: careful players (who answer the enemy's moves) with poor, average and skilled timing or timing turned off, careless players, a careful player who follows the stories, and careful players carrying the strongest two and three legacy gifts. For each it shows how many survive to 900, where the rest die, when each rank is first reached, silver and reputation at the end, and which ending would score best. It also shows how often a story begins, how often each later step of a story comes, and which events are seen least.
+`npm run balance` plays 13,500 runs with bots and prints a report for each kind of player: careful players (who answer the enemy's moves) with poor, average and skilled timing or timing turned off, careless players, a careful player who follows the stories, careful players carrying the strongest two and three legacy gifts, and a thrifty one who keeps his silver instead of spending it on his men. For each it shows how many survive to 900, where the rest die, when each rank is first reached, silver and reputation at the end, and which ending would score best. It also shows how often a story begins, how often each later step of a story comes, and which events are seen least.
 
 The How to play page (`src/ui/help.ts`) is built from the same tables, so it follows most changes by itself. The few numbers written out there by hand come from formulas in the rules, and the comments in that file say which.
 
-The test fails when a change tips the game too far, for example if a careful player with average timing survives to 900 less than 15% or more than 45% of the time, if timing decides too much, if the top ranks come before Edington, if one ending is best for nearly everyone, if a story’s later steps stop coming, if an event becomes so rare it might as well not be there, if the strongest legacy gifts a raider can carry make the game too easy, or if the whole legacy shop can be bought in a few sagas. The limits are in `tests/simulate.test.ts`; the bot is in `tests/sim.ts`.
+The test fails when a change tips the game too far, for example if a careful player with average timing survives to 900 less than 15% or more than 45% of the time, if timing decides too much, if the top ranks come before Edington, if one ending is best for nearly everyone, if a story’s later steps stop coming, if an event becomes so rare it might as well not be there, if the strongest legacy gifts a raider can carry make the game too easy, if the whole legacy shop can be bought in a few sagas, or if spending silver on your men stops being worth it. The limits are in `tests/simulate.test.ts`; the bot is in `tests/sim.ts`.
 
 ## The public site
 
