@@ -4,8 +4,8 @@
  * core/combat.ts, core/camp.ts and core/state.ts; change them here if you change them there.
  * No browser code, so the tests can read the page.
  */
-import { COST, FEINTS, FOE_KINDS, GIFT, GODS, HIRE, INTENTS, RANKS, STATS, SWING, TRAINING } from "../content/tables";
-import type { GodId, IntentId, Stat } from "../types";
+import { BOON_PRICES, BOON_SLOTS, BOONS, COST, FEINTS, FOE_KINDS, GIFT, GODS, HIRE, INTENTS, RANKS, STATS, SWING, TRAINING } from "../content/tables";
+import type { BoonId, GodId, IntentId, Stat } from "../types";
 
 const pct = (n: number) => `${n > 0 ? "+" : "−"}${Math.abs(n)}%`;
 
@@ -17,9 +17,11 @@ export function helpHtml(phone: boolean): string {
   const kinds = Object.values(FOE_KINDS).map((k) => `<li>${k.note}</li>`).join("");
   const ranks = RANKS.slice(1).map((r) => `<dt>${r.n}</dt><dd>Reputation ${r.rep} and ${r.kills} foes slain. ${r.perk}</dd>`).join("");
   const captain = RANKS.find((r) => r.acts > RANKS[0].acts);
+  const gifts = (Object.keys(BOONS) as BoonId[]).map((k) => `<dt>${BOONS[k].n}</dt><dd>${BOONS[k].d.charAt(0).toUpperCase() + BOONS[k].d.slice(1)}.</dd>`).join("");
+  const number = ["no", "one", "two", "three"];
   return `<section class="help" aria-label="How to play">
     <h2>How to play</h2>
-    <p>You are one raider of the Great Heathen Army. Each of the sixteen chapters is a camp and then a battle. Death is permanent, but every saga earns legacy points that buy gifts for the raiders who come after.</p>
+    <p>You are one raider of the Great Heathen Army. Each of the sixteen chapters is a camp and then a battle. Death is permanent, but every saga earns legacy points that buy gifts for the raiders who come after (see Legacy, below).</p>
 
     <h3>Your raider</h3>
     <dl>${stats}
@@ -58,6 +60,10 @@ export function helpHtml(phone: boolean): string {
 
     <h3>Silver and endings</h3>
     <p>After a battle the hoard is shared out by rank, and the jarl adds a gift for your own kills. Skimming doubles your share if nobody sees you. After Edington in 878 you may end your saga or cross the sea, and after the last battle of 900 you choose your ending: baptism rewards reputation, sailing home rewards silver, and land at York rewards rank and kills.</p>
+    <h3>Legacy</h3>
+    <p>Every saga earns one legacy point for each five points of its score, however it ends. On the title screen the points buy gifts. A gift stays for every raider after, and each costs more than the last, from ${BOON_PRICES[0]} points to ${BOON_PRICES[BOON_PRICES.length - 1]}. One raider carries ${number[BOON_SLOTS.base]} of them, or ${number[BOON_SLOTS.most]} once you have bought the place for another (${BOON_SLOTS.price} points).</p>
+    <dl>${gifts}</dl>
+
     ${phone ? "" : `<h3>Keys</h3>
     <p>Number keys pick from the choices on screen, and 0 marches to battle. Space or Enter swings and looses arrows. The question mark opens and closes this page.</p>`}
   </section>`;

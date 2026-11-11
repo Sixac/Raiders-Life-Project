@@ -1,13 +1,13 @@
 /* The shield-wall battle: enemy moves, timed swings, the push of the walls, mid-fight choices, loot. */
 import type { Action, Foe, IntentId, Quality, Swing } from "../types";
-import { ARMOUR, ATTACKS, CH, COST, ENEMIES, FEINTS, FOE_KINDS, INTENTS, JARL_GIFT, LOOT, RANKS, SWING } from "../content/tables";
+import { ARMOUR, ATTACKS, BOON_EFFECT, CH, COST, ENEMIES, FEINTS, FOE_KINDS, INTENTS, JARL_GIFT, LOOT, RANKS, SWING } from "../content/tables";
 import { cl, pct, pick, R, roll } from "./random";
-import { b, cap, ck, crewAll, eSkl, eStr, exposed, g, hurt, keepLegacy, maxSta, say, st, tier } from "./state";
+import { b, cap, carries, ck, crewAll, eSkl, eStr, exposed, g, hurt, keepLegacy, maxSta, say, st, tier } from "./state";
 import { addWound, fix, promote, refillCrew } from "./life";
 import { advance } from "./camp";
 import { die, isFinale } from "./endings";
 
-export const readP = () => cl(45 + eSkl() * 6, 45, 95);
+export const readP = () => cl(45 + eSkl() * 6 + (carries("wolf") ? BOON_EFFECT.read : 0), 45, 95);
 
 /** Chance (percent) to see through a feint. */
 export const seeP = () => cl(FEINTS.seeBase + eSkl() * FEINTS.seePerSkill, FEINTS.seeBase, FEINTS.seeMax);

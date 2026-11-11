@@ -7,7 +7,7 @@
  * Bots pick event options at random; one that "follows the stories" takes the option that keeps
  * a story going whenever there is one, as a player curious about Eadgyth or Hrafn would.
  */
-import type { Action, Quality } from "../src/types";
+import type { Action, BoonId, Quality } from "../src/types";
 import { MemoryStore, useStore } from "../src/save/storage";
 import { maxhp, st } from "../src/core/state";
 import { act, hireSide, newGame } from "../src/core/camp";
@@ -17,7 +17,7 @@ import { crossSea, ending, ENDINGS } from "../src/core/endings";
 import { ARMOUR, ATTACKS, CH, COST, EDINGTON, EVENT_BY_ID, EVENTS, FRANKISH_FROM, GIFT, HIRE, INTENTS, RANKS, WEAPONS } from "../src/content/tables";
 
 export type Timing = "off" | "poor" | "average" | "skilled";
-export interface Profile { careful: boolean; timing: Timing; stories?: boolean }
+export interface Profile { careful: boolean; timing: Timing; stories?: boolean; /** Legacy gifts every raider of this bot carries. */ boons?: BoonId[] }
 
 /** The first event of each story: one that later events follow and that follows nothing itself. */
 export const STORY_OPENERS = [...new Set(EVENTS.filter((e) => e.after).map((e) => {
@@ -57,9 +57,11 @@ export interface Report {
   /** Runs that lasted until every story opener had had its chance, and how many of them began a story. */
   storyRuns: number;
   storyBegun: number;
+  /** Legacy points each run earned. */
+  points: number[];
 }
 
-const median = (a: number[]) => { if (!a.length) return NaN; const b = [...a].sort((x, y) => x - y); return b[b.length >> 1]; };
+export const median = (a: number[]) => { if (!a.length) return NaN; const b = [...a].sort((x, y) => x - y); return b[b.length >> 1]; };
 export const pctOf = (n: number, of: number) => (of ? (100 * n) / of : 0);
 
 function swingQuality(t: Timing): Quality {
@@ -107,7 +109,9 @@ export function simulate(p: Profile, runs: number): Report {
   st.interactive = false;
   const r: Report = { runs, errors: [], reached900: 0, deathsAt: Array(CH.length).fill(0), rankChapter: [], rankReached: Array(RANKS.length).fill(0),
     silver900: [], rep900: [], bestEnding: { baptism: 0, sail: 0, danelaw: 0 }, roundsPerBattle: [], eventsSeen: new Set(),
-    eventMet: {}, eventCould: {}, storyRuns: 0, storyBegun: 0 };
+    eventMet: {}, eventCould: {}, storyRuns: 0, storyBegun: 0, points: [] };
+  const boons = p.boons ?? [];
+  Object.assign(st.L, { own: [...boons], carry: [...boons], slots: Math.max(2, boons.length) });
   const rankChapters: number[][] = RANKS.map(() => []);
   for (let n = 0; n < runs; n++) {
     try {
@@ -149,6 +153,7 @@ export function simulate(p: Profile, runs: number): Report {
       }
       const G = st.G!;
       if (G.phase !== "over") throw new Error(`did not finish (phase ${G.phase}, chapter ${G.ch})`);
+      r.points.push(G.res!.pts);
       if (G.res!.k === "death") r.deathsAt[G.ch]++;
       else if (G.ch === CH.length - 1) r.reached900++;
       for (const id of met) r.eventMet[id] = (r.eventMet[id] ?? 0) + 1;
@@ -187,6 +192,6 @@ export function describe(label: string, r: Report): string {
     `  survived to 900: ${pctOf(r.reached900, r.runs).toFixed(1)}%   deaths by chapter: ${r.deathsAt.join(" ")}`,
     `  rank first reached (median chapter, share of runs): ${ranks}`,
     `  at 900: median silver ${median(r.silver900)}, median reputation ${median(r.rep900)}; best ending ${n900 ? best : "n/a"}`,
-    `  rounds per battle: median ${median(r.roundsPerBattle)}`,
+    `  rounds per battle: median ${median(r.roundsPerBattle)}; legacy points per run: median ${median(r.points)}`,
   ].join("\n");
 }

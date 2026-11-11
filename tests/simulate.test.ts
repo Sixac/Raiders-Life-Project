@@ -4,8 +4,8 @@
  * checks on purpose, adjust the limits here and say why in the commit.
  */
 import { describe as group, expect, it } from "vitest";
-import { EVENTS } from "../src/content/tables";
-import { describe, describeEvents, pctOf, shown, simulate, type Profile, type Report } from "./sim";
+import { BOON_PRICES, BOON_SLOTS, EVENTS } from "../src/content/tables";
+import { describe, describeEvents, median, pctOf, shown, simulate, type Profile, type Report } from "./sim";
 
 const RUNS = 1500;   // for each kind of player below
 const PROFILES: Record<string, Profile> = {
@@ -15,6 +15,9 @@ const PROFILES: Record<string, Profile> = {
   "careful, skilled timing": { careful: true, timing: "skilled" },
   "careless, average timing": { careful: false, timing: "average" },
   "careful, average timing, follows the stories": { careful: true, timing: "average", stories: true },
+  // Legacy gifts: the strongest pair and the strongest three found when they were tuned.
+  "careful, average timing, two gifts": { careful: true, timing: "average", boons: ["skl", "end"] },
+  "careful, average timing, three gifts": { careful: true, timing: "average", boons: ["skl", "end", "jerkin"] },
 };
 
 group("simulated play", () => {
@@ -26,6 +29,8 @@ group("simulated play", () => {
     }
     const story = r["careful, average timing, follows the stories"];
     console.log(describeEvents(story));
+    const shop = BOON_PRICES.reduce((a, b) => a + b, 0) + BOON_SLOTS.price;
+    console.log(`legacy: every gift and the third place cost ${shop} points together, about ${Math.round(shop / median(r["careful, average timing"].points))} sagas of a careful player`);
     const seen = new Set(Object.values(r).flatMap((x) => [...x.eventsSeen]));
     console.log("events never seen:", EVENTS.filter((e) => !seen.has(e.id)).map((e) => e.id).join(", ") || "none");
 
@@ -48,6 +53,14 @@ group("simulated play", () => {
     // No single ending should be the best choice for nearly everyone who reaches 900.
     const n900 = avg.silver900.length;
     for (const k of Object.keys(avg.bestEnding)) expect(pctOf(avg.bestEnding[k], n900)).toBeLessThan(75);
+
+    // Legacy gifts should help, but even the strongest a raider can carry must leave the game a fight.
+    expect(survival("careful, average timing, two gifts")).toBeGreaterThan(survival("careful, average timing"));
+    expect(survival("careful, average timing, two gifts")).toBeLessThan(60);
+    expect(survival("careful, average timing, three gifts")).toBeLessThan(65);
+    // And they should last: a careless first raider can usually afford one gift, but owning everything takes many good sagas.
+    expect(median(r["careless, average timing"].points)).toBeGreaterThanOrEqual(BOON_PRICES[0]);
+    expect(shop).toBeGreaterThan(8 * median(avg.points));
 
     // Stories: most sagas should have one in them, and once begun its later steps must really come.
     expect(pctOf(story.storyBegun, story.storyRuns)).toBeGreaterThan(75);

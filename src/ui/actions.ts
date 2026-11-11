@@ -1,8 +1,8 @@
 /* Every button runs one of these by name (see btn() in html.ts). The page re-renders after each. */
-import type { PerkId } from "../types";
+import type { BoonId } from "../types";
 import { KEYS, SAVE_VERSION, store } from "../save/storage";
 import { readSaved } from "../save/local";
-import { keepLegacy, loadLegacy, st } from "../core/state";
+import { buyBoonSlot, chooseBoon, keepLegacy, loadLegacy, st } from "../core/state";
 import { act, loose, newGame } from "../core/camp";
 import { choose } from "../core/events";
 import { answer, loot, march, release, turn } from "../core/combat";
@@ -29,7 +29,8 @@ const ACTIONS: Record<string, (...args: never[]) => unknown> = {
   help: () => { ui.help = !ui.help; window.scrollTo(0, 0); },
   dismissProblem: () => { ui.problem = ""; },
   eraseRun: () => { store.remove(KEYS.run); ui.problem = ""; },
-  up: (k: PerkId) => { const L = st.L; if (L.pts < 3 || L.up[k] >= 3) return; L.pts -= 3; L.up[k]++; keepLegacy(); },
+  boon: (id: BoonId) => { chooseBoon(id); },
+  boonSlot: () => { buyBoonSlot(); },
   reroll: () => { freshUiName(); },
   continueRun: () => { const { run } = readSaved(); if (run) { loadRun(run); Object.assign(ui, { tab: "saga", recent: 0, saveMsg: "", problem: "" }); } },
   begin: () => {
